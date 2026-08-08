@@ -91,8 +91,17 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script>
-        // Initialisation Firebase (config dans firebase-config.js)
-        firebase.initializeApp(firebaseConfig);
+        // Initialisation Firebase : firebase-config.js s'il est présent,
+        // sinon la copie ci-dessous (la page reste fonctionnelle sans ce fichier).
+        const MMH_CONFIG = (typeof firebaseConfig !== 'undefined') ? firebaseConfig : {
+            apiKey: "AIzaSyDd24327mfgTZZ7IvvB0TYNIBfn8AKmd-w",
+            authDomain: "mmh-resto.firebaseapp.com",
+            projectId: "mmh-resto",
+            storageBucket: "mmh-resto.firebasestorage.app",
+            messagingSenderId: "831695759118",
+            appId: "1:831695759118:web:45a25ce77b0a5289c3995f"
+        };
+        firebase.initializeApp(MMH_CONFIG);
         const auth = firebase.auth();
 
         // Au chargement de la page

@@ -746,8 +746,18 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
     <script src="firebase-config.js"></script>
 
     <script>
-        // --- INITIALISATION FIREBASE (config dans firebase-config.js) ---
-        firebase.initializeApp(firebaseConfig);
+        // --- INITIALISATION FIREBASE ---
+        // On utilise firebase-config.js s'il est présent, sinon la copie ci-dessous.
+        // Ainsi la page fonctionne même si ce fichier n'a pas été mis en ligne.
+        const MMH_CONFIG = (typeof firebaseConfig !== 'undefined') ? firebaseConfig : {
+            apiKey: "AIzaSyDd24327mfgTZZ7IvvB0TYNIBfn8AKmd-w",
+            authDomain: "mmh-resto.firebaseapp.com",
+            projectId: "mmh-resto",
+            storageBucket: "mmh-resto.firebasestorage.app",
+            messagingSenderId: "831695759118",
+            appId: "1:831695759118:web:45a25ce77b0a5289c3995f"
+        };
+        firebase.initializeApp(MMH_CONFIG);
         const db = firebase.firestore();
 
         // --- MODALS INTÉGRÉS (remplacent alert()/confirm() du navigateur) ---
