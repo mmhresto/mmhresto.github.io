@@ -70,8 +70,11 @@ textarea{resize:vertical;min-height:80px}
 .done .big{width:70px;height:70px;border-radius:50%;display:grid;place-items:center;margin:0 auto 16px;font-size:1.8rem;color:#231a10;background:var(--gold)}
 .done h2{font-family:var(--serif);font-weight:500;font-size:2rem}
 .done p{color:var(--cream-soft);font-weight:300;margin-top:8px}
-.done .again{margin-top:20px;display:inline-block;background:none;border:1px solid var(--line);color:var(--cream);padding:11px 20px;border-radius:999px;cursor:pointer;font-size:.9rem}
-.done .again:hover{border-color:var(--gold)}
+.again-row{margin-top:22px;display:flex;flex-direction:column;gap:10px;align-items:center}
+.done .again{display:inline-flex;align-items:center;gap:8px;background:none;border:1px solid var(--line);color:var(--cream);padding:12px 22px;border-radius:999px;cursor:pointer;font-size:.9rem;font-family:var(--sans);transition:.2s}
+.done .again:hover{border-color:var(--gold);color:var(--gold)}
+.done .again.primary{background:var(--gold);border-color:transparent;color:#231a10;font-weight:600}
+.done .again.primary:hover{background:#e6c377;color:#231a10}
 </style>
 </head>
 <body>
@@ -87,7 +90,7 @@ textarea{resize:vertical;min-height:80px}
 
   <div id="menuBox"><div class="loading">Chargement du menu…</div></div>
 
-  <label for="note">Une remarque&nbsp;? <span style="color:var(--cream-mute);font-weight:300">(allergie, sans oignon, petite faim…)</span></label>
+  <label for="note">Quelque chose à ajouter&nbsp;?</label>
   <textarea id="note" placeholder="Facultatif" maxlength="200"></textarea>
 
   <div class="recap" id="recap">
@@ -104,7 +107,10 @@ textarea{resize:vertical;min-height:80px}
   <div class="big"><i class="fas fa-check"></i></div>
   <h2>C'est noté&nbsp;!</h2>
   <p id="doneMsg">Merci, on ajoute ça à la liste de courses.</p>
-  <button class="again" id="again">Modifier mon choix</button>
+  <div class="again-row">
+    <button class="again" id="again">Modifier mon choix</button>
+    <button class="again primary" id="another"><i class="fas fa-user-plus"></i> Précommander pour quelqu'un d'autre</button>
+  </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -141,22 +147,30 @@ function loadDraft(){
 $("name").addEventListener("input",saveDraft);
 $("note").addEventListener("input",saveDraft);
 
-// ---------- Menu lu depuis Firestore (le même que sur le site) ----------
-Promise.all([
-  db.collection("menu").get(),
-  db.collection("menuItems").get()
-]).then(([cs,is])=>{
-  cats=cs.docs.map(d=>({id:d.id,...d.data()}))
+// ---------- Menu en temps réel : toute modif faite dans l'admin arrive ici ----------
+let gotCats=false, gotDishes=false, draftLoaded=false;
+function menuReady(){
+  if(!gotCats || !gotDishes) return;
+  if(!draftLoaded){ loadDraft(); draftLoaded=true; }
+  // un plat retiré du menu ne doit pas rester dans le choix
+  Object.keys(qty).forEach(id=>{ if(!dishes.some(d=>d.id===id)) delete qty[id]; });
+  renderMenu();
+}
+function menuErr(e){
+  console.error(e);
+  if(!dishes.length) $("menuBox").innerHTML='<div class="loading">Impossible de charger le menu. Réessayez dans un instant.</div>';
+}
+db.collection("menu").onSnapshot(s=>{
+  cats=s.docs.map(d=>({id:d.id,...d.data()}))
              .sort((a,b)=>((a.order??999)-(b.order??999))||String(a.name||"").localeCompare(String(b.name||"")));
-  dishes=is.docs.map(d=>({id:d.id,...d.data()}))
+  gotCats=true; menuReady();
+}, menuErr);
+db.collection("menuItems").onSnapshot(s=>{
+  dishes=s.docs.map(d=>({id:d.id,...d.data()}))
                .filter(x=>x.active!==false)
                .sort((a,b)=>((a.order??9999)-(b.order??9999))||String(a.name||"").localeCompare(String(b.name||"")));
-  loadDraft();
-  renderMenu();
-}).catch(e=>{
-  console.error(e);
-  $("menuBox").innerHTML='<div class="loading">Impossible de charger le menu. Réessayez dans un instant.</div>';
-});
+  gotDishes=true; menuReady();
+}, menuErr);
 
 function renderMenu(){
   if(!dishes.length){ $("menuBox").innerHTML='<div class="loading">Le menu n\'est pas encore prêt.</div>'; return; }
@@ -224,6 +238,12 @@ function paintRecap(){
 }
 
 // ---------- Envoi ----------
+// On retient la précommande envoyée : « Modifier » la met à jour au lieu
+// d'en créer une deuxième (sinon le plat serait compté en double).
+const LAST="mmh_precmd_last";
+let lastId=null;
+try{ lastId=localStorage.getItem(LAST)||null; }catch(e){}
+
 $("send").onclick=()=>{
   const name=$("name").value.trim();
   const list=chosen();
@@ -233,21 +253,33 @@ $("send").onclick=()=>{
   err.style.display="none";
   $("send").disabled=true; $("send").textContent="Envoi…";
 
-  db.collection("preorders").add({
+  const payload={
     name:name,
     items:list,
     total:list.reduce((s,c)=>s+c.qty,0),
     note:$("note").value.trim(),
-    service:"Dîner du lundi 10 août 2026",
-    createdAt:firebase.firestore.FieldValue.serverTimestamp()
-  }).then(()=>{
-    try{ localStorage.removeItem(DRAFT); }catch(e){}
+    service:"Dîner du lundi 10 août 2026"
+  };
+
+  const op = lastId
+    ? db.collection("preorders").doc(lastId)
+        .update(Object.assign({},payload,{updatedAt:firebase.firestore.FieldValue.serverTimestamp()}))
+        .then(()=>lastId)
+    : db.collection("preorders")
+        .add(Object.assign({},payload,{createdAt:firebase.firestore.FieldValue.serverTimestamp()}))
+        .then(ref=>ref.id);
+
+  op.then(id=>{
+    lastId=id;
+    try{ localStorage.setItem(LAST,id); localStorage.removeItem(DRAFT); }catch(e){}
     $("doneMsg").textContent="Merci "+name+", on ajoute ça à la liste de courses.";
     $("card").style.display="none";
     $("done").style.display="";
     window.scrollTo({top:0,behavior:"smooth"});
   }).catch(e=>{
     console.error(e);
+    // la précommande a pu être supprimée côté cuisine : on en recrée une
+    if(lastId){ lastId=null; try{ localStorage.removeItem(LAST); }catch(e2){} }
     err.textContent="L'envoi a échoué. Vérifiez votre connexion et réessayez.";
     err.style.display="block";
   }).finally(()=>{
@@ -255,9 +287,24 @@ $("send").onclick=()=>{
   });
 };
 
+// Corriger sa propre précommande
 $("again").onclick=()=>{
   $("done").style.display="none";
   $("card").style.display="";
+  window.scrollTo({top:0,behavior:"smooth"});
+};
+
+// Repartir de zéro pour une autre personne (nouvelle précommande)
+$("another").onclick=()=>{
+  lastId=null;
+  try{ localStorage.removeItem(LAST); localStorage.removeItem(DRAFT); }catch(e){}
+  qty={};
+  $("name").value=""; $("note").value="";
+  paintAll();
+  $("done").style.display="none";
+  $("card").style.display="";
+  $("name").focus();
+  window.scrollTo({top:0,behavior:"smooth"});
 };
 </script>
 </body>
