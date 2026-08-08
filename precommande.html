@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Votre choix — MMH Restaurant</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root{
+  --bg:#140f0d;--panel:#211a16;--cream:#f3ece0;--cream-soft:rgba(243,236,224,.72);--cream-mute:rgba(243,236,224,.44);
+  --gold:#d8b25e;--gold-deep:#b8923f;--line:rgba(243,236,224,.14);
+  --serif:"Cormorant Garamond",Georgia,serif;--sans:"Inter",system-ui,-apple-system,sans-serif;--ease:cubic-bezier(.22,1,.36,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;min-height:100svh;background:var(--bg);color:var(--cream);font-family:var(--sans);-webkit-font-smoothing:antialiased;
+  display:flex;align-items:flex-start;justify-content:center;padding:24px 16px 60px;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;background:
+  radial-gradient(90% 60% at 50% -10%,rgba(216,178,94,.16),transparent 58%),
+  radial-gradient(75% 65% at 108% 105%,rgba(140,52,46,.20),transparent 60%),
+  radial-gradient(120% 120% at 50% 40%,transparent 55%,rgba(0,0,0,.45) 100%)}
+body::after{content:"";position:fixed;inset:0;z-index:-1;opacity:.04;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.card{width:100%;max-width:560px;border-radius:22px;padding:clamp(22px,5vw,36px);
+  background:rgba(24,17,13,.6);border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.22);
+  backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4)}
+.brand{font-family:var(--serif);font-size:1.3rem;font-weight:600;letter-spacing:.04em;text-align:center}
+.brand span{color:var(--gold)}
+h1{font-family:var(--serif);font-weight:500;font-size:clamp(2rem,7vw,2.7rem);line-height:1.05;text-align:center;margin:6px 0 6px}
+.sub{text-align:center;color:var(--cream-soft);font-weight:300;font-size:.95rem;margin-bottom:6px}
+.when{text-align:center;color:var(--gold);font-family:var(--serif);font-size:1.15rem;margin-bottom:22px}
+label{display:block;font-size:.85rem;font-weight:500;color:var(--cream-soft);margin:16px 0 8px}
+input[type=text],textarea{width:100%;background:rgba(9,6,5,.5);border:1px solid var(--line);border-radius:12px;color:var(--cream);font:400 1rem var(--sans);padding:13px 15px}
+input::placeholder,textarea::placeholder{color:var(--cream-mute)}
+input:focus,textarea:focus{outline:none;border-color:var(--gold)}
+textarea{resize:vertical;min-height:80px}
+
+.cat{margin-top:26px}
+.cat-title{font-family:var(--sans);font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);
+  display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.cat-title::after{content:"";flex:1;height:1px;background:var(--line)}
+.dish{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(243,236,224,.07)}
+.dish:last-child{border-bottom:none}
+.dish-info{flex:1;min-width:0}
+.dish-name{font-family:var(--serif);font-size:1.25rem;line-height:1.2}
+.dish-desc{font-size:.8rem;color:var(--cream-mute);font-weight:300;margin-top:2px}
+.dish.picked .dish-name{color:var(--gold)}
+.qty{display:flex;align-items:center;gap:4px;flex:none}
+.qty button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.04);
+  color:var(--cream);font-size:1rem;cursor:pointer;display:grid;place-items:center;transition:.15s;-webkit-tap-highlight-color:transparent}
+.qty button:hover:not(:disabled){border-color:var(--gold);color:var(--gold)}
+.qty button:disabled{opacity:.25;cursor:default}
+.qty .n{width:30px;text-align:center;font-weight:600;font-size:1.05rem;font-variant-numeric:tabular-nums}
+.qty .n.zero{color:var(--cream-mute);font-weight:400}
+
+.recap{margin-top:26px;border:1px solid rgba(216,178,94,.3);background:rgba(216,178,94,.07);border-radius:14px;padding:14px 16px;display:none}
+.recap.on{display:block}
+.recap h3{font-family:var(--serif);font-weight:500;font-size:1.2rem;margin:0 0 8px;color:var(--gold)}
+.recap ul{margin:0;padding-left:18px;font-size:.9rem;color:var(--cream-soft);font-weight:300}
+.recap li{margin:3px 0}
+
+.err{color:#f0a08e;font-weight:500;font-size:.88rem;margin-top:14px;display:none}
+.btn{width:100%;margin-top:22px;padding:15px;border-radius:14px;border:none;background:var(--gold);color:#231a10;font-weight:600;font-size:1rem;cursor:pointer;transition:transform .25s var(--ease),background .2s}
+.btn:hover{background:#e6c377;transform:translateY(-2px)}
+.btn:disabled{opacity:.6;transform:none;cursor:default}
+.hint{font-size:.78rem;color:var(--cream-mute);font-weight:300;margin-top:10px;text-align:center}
+.loading{text-align:center;color:var(--cream-mute);padding:30px 0;font-weight:300}
+.done{text-align:center;padding:20px 0}
+.done .big{width:70px;height:70px;border-radius:50%;display:grid;place-items:center;margin:0 auto 16px;font-size:1.8rem;color:#231a10;background:var(--gold)}
+.done h2{font-family:var(--serif);font-weight:500;font-size:2rem}
+.done p{color:var(--cream-soft);font-weight:300;margin-top:8px}
+.done .again{margin-top:20px;display:inline-block;background:none;border:1px solid var(--line);color:var(--cream);padding:11px 20px;border-radius:999px;cursor:pointer;font-size:.9rem}
+.done .again:hover{border-color:var(--gold)}
+</style>
+</head>
+<body>
+
+<div class="card" id="card">
+  <div class="brand">MMH<span>.</span> Restaurant</div>
+  <h1>Qu'est-ce qui vous ferait plaisir&nbsp;?</h1>
+  <p class="sub">Dites-nous ce que vous aimeriez manger, on fait les courses en conséquence.</p>
+  <p class="when" id="whenLine">Dîner du lundi 10 août 2026</p>
+
+  <label for="name">Votre nom</label>
+  <input type="text" id="name" placeholder="Prénom" maxlength="40" autocomplete="name">
+
+  <div id="menuBox"><div class="loading">Chargement du menu…</div></div>
+
+  <label for="note">Une remarque&nbsp;? <span style="color:var(--cream-mute);font-weight:300">(allergie, sans oignon, petite faim…)</span></label>
+  <textarea id="note" placeholder="Facultatif" maxlength="200"></textarea>
+
+  <div class="recap" id="recap">
+    <h3>Votre choix</h3>
+    <ul id="recapList"></ul>
+  </div>
+
+  <p class="err" id="err"></p>
+  <button class="btn" id="send">Envoyer mon choix</button>
+  <p class="hint">Vous pourrez toujours changer d'avis : renvoyez simplement le formulaire.</p>
+</div>
+
+<div class="card done" id="done" style="display:none">
+  <div class="big"><i class="fas fa-check"></i></div>
+  <h2>C'est noté&nbsp;!</h2>
+  <p id="doneMsg">Merci, on ajoute ça à la liste de courses.</p>
+  <button class="again" id="again">Modifier mon choix</button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyDd24327mfgTZZ7IvvB0TYNIBfn8AKmd-w",
+  authDomain:"mmh-resto.firebaseapp.com",
+  projectId:"mmh-resto",
+  storageBucket:"mmh-resto.firebasestorage.app",
+  messagingSenderId:"831695759118",
+  appId:"1:831695759118:web:45a25ce77b0a5289c3995f"
+});
+const db=firebase.firestore();
+const $=id=>document.getElementById(id);
+const esc=v=>String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+
+const MAX_PER_DISH=6;
+let cats=[], dishes=[], qty={};   // qty : id du plat -> quantité
+
+// ---------- Brouillon local (on ne perd rien si la page est rechargée) ----------
+const DRAFT="mmh_precmd_draft";
+function saveDraft(){
+  try{ localStorage.setItem(DRAFT, JSON.stringify({name:$("name").value, note:$("note").value, qty:qty})); }catch(e){}
+}
+function loadDraft(){
+  try{
+    const d=JSON.parse(localStorage.getItem(DRAFT)||"{}");
+    if(d.name) $("name").value=d.name;
+    if(d.note) $("note").value=d.note;
+    if(d.qty) qty=d.qty;
+  }catch(e){}
+}
+$("name").addEventListener("input",saveDraft);
+$("note").addEventListener("input",saveDraft);
+
+// ---------- Menu lu depuis Firestore (le même que sur le site) ----------
+Promise.all([
+  db.collection("menu").get(),
+  db.collection("menuItems").get()
+]).then(([cs,is])=>{
+  cats=cs.docs.map(d=>({id:d.id,...d.data()}))
+             .sort((a,b)=>((a.order??999)-(b.order??999))||String(a.name||"").localeCompare(String(b.name||"")));
+  dishes=is.docs.map(d=>({id:d.id,...d.data()}))
+               .filter(x=>x.active!==false)
+               .sort((a,b)=>((a.order??9999)-(b.order??9999))||String(a.name||"").localeCompare(String(b.name||"")));
+  loadDraft();
+  renderMenu();
+}).catch(e=>{
+  console.error(e);
+  $("menuBox").innerHTML='<div class="loading">Impossible de charger le menu. Réessayez dans un instant.</div>';
+});
+
+function renderMenu(){
+  if(!dishes.length){ $("menuBox").innerHTML='<div class="loading">Le menu n\'est pas encore prêt.</div>'; return; }
+  const groups=[];
+  cats.forEach(c=>{
+    const items=dishes.filter(d=>d.category===c.id);
+    if(items.length) groups.push({name:c.name,items});
+  });
+  const orphans=dishes.filter(d=>!cats.some(c=>c.id===d.category));
+  if(orphans.length) groups.push({name:"Autres",items:orphans});
+
+  $("menuBox").innerHTML=groups.map(g=>`
+    <div class="cat">
+      <div class="cat-title">${esc(g.name)}</div>
+      ${g.items.map(it=>`
+        <div class="dish" data-id="${it.id}">
+          <div class="dish-info">
+            <div class="dish-name">${esc(it.name)}</div>
+            ${it.description?`<div class="dish-desc">${esc(it.description)}</div>`:""}
+          </div>
+          <div class="qty">
+            <button type="button" class="minus" data-id="${it.id}" aria-label="Retirer">−</button>
+            <span class="n" data-n="${it.id}">0</span>
+            <button type="button" class="plus" data-id="${it.id}" aria-label="Ajouter">+</button>
+          </div>
+        </div>`).join("")}
+    </div>`).join("");
+
+  $("menuBox").querySelectorAll(".plus").forEach(b=>b.onclick=()=>bump(b.dataset.id,+1));
+  $("menuBox").querySelectorAll(".minus").forEach(b=>b.onclick=()=>bump(b.dataset.id,-1));
+  paintAll();
+}
+
+function bump(id,delta){
+  const v=Math.max(0,Math.min(MAX_PER_DISH,(qty[id]||0)+delta));
+  if(v===0) delete qty[id]; else qty[id]=v;
+  paintAll(); saveDraft();
+  $("err").style.display="none";
+}
+
+function paintAll(){
+  dishes.forEach(it=>{
+    const n=qty[it.id]||0;
+    const el=document.querySelector('[data-n="'+it.id+'"]');
+    if(el){ el.textContent=n; el.classList.toggle("zero",n===0); }
+    const row=document.querySelector('.dish[data-id="'+it.id+'"]');
+    if(row) row.classList.toggle("picked",n>0);
+    const minus=document.querySelector('.minus[data-id="'+it.id+'"]');
+    if(minus) minus.disabled=(n===0);
+    const plus=document.querySelector('.plus[data-id="'+it.id+'"]');
+    if(plus) plus.disabled=(n>=MAX_PER_DISH);
+  });
+  paintRecap();
+}
+
+function chosen(){
+  return dishes.filter(d=>qty[d.id]>0).map(d=>({id:d.id,name:d.name||"",qty:qty[d.id]}));
+}
+
+function paintRecap(){
+  const list=chosen();
+  const box=$("recap");
+  box.classList.toggle("on",list.length>0);
+  $("recapList").innerHTML=list.map(c=>`<li>${c.qty} × ${esc(c.name)}</li>`).join("");
+}
+
+// ---------- Envoi ----------
+$("send").onclick=()=>{
+  const name=$("name").value.trim();
+  const list=chosen();
+  const err=$("err");
+  if(!name){ err.textContent="Merci d'indiquer votre nom."; err.style.display="block"; $("name").focus(); return; }
+  if(!list.length){ err.textContent="Choisissez au moins un plat."; err.style.display="block"; return; }
+  err.style.display="none";
+  $("send").disabled=true; $("send").textContent="Envoi…";
+
+  db.collection("preorders").add({
+    name:name,
+    items:list,
+    total:list.reduce((s,c)=>s+c.qty,0),
+    note:$("note").value.trim(),
+    service:"Dîner du lundi 10 août 2026",
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  }).then(()=>{
+    try{ localStorage.removeItem(DRAFT); }catch(e){}
+    $("doneMsg").textContent="Merci "+name+", on ajoute ça à la liste de courses.";
+    $("card").style.display="none";
+    $("done").style.display="";
+    window.scrollTo({top:0,behavior:"smooth"});
+  }).catch(e=>{
+    console.error(e);
+    err.textContent="L'envoi a échoué. Vérifiez votre connexion et réessayez.";
+    err.style.display="block";
+  }).finally(()=>{
+    $("send").disabled=false; $("send").textContent="Envoyer mon choix";
+  });
+};
+
+$("again").onclick=()=>{
+  $("done").style.display="none";
+  $("card").style.display="";
+};
+</script>
+</body>
+</html>
