@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Remplir le garde-manger — MMH</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+  body{background:#f6f7f9;padding:24px 14px 60px;font-family:system-ui,-apple-system,sans-serif}
+  .wrap{max-width:1000px;margin:auto}
+  .head{background:#8B0000;color:#fff;border-radius:14px;padding:20px 22px;margin-bottom:18px}
+  .head h1{font-size:1.4rem;margin:0 0 6px}
+  .head p{margin:0;opacity:.9;font-size:.92rem}
+  .card{border:none;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:16px}
+  .card-header{background:#fff;border-bottom:1px solid #eceef2;font-weight:600;border-radius:14px 14px 0 0}
+  .ing-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f4f5f7;flex-wrap:wrap}
+  .ing-row:last-child{border-bottom:none}
+  .ing-row.done{opacity:.5}
+  .ing-name{flex:1;min-width:170px;font-weight:500}
+  .ing-pack{color:#8b93a1;font-size:.82rem;min-width:150px}
+  .ing-row input{width:92px}
+  .ing-row .chk{width:20px;height:20px;flex:none;accent-color:#198754;cursor:pointer}
+  .drive-btn{white-space:nowrap;font-size:.8rem;padding:.25rem .6rem}
+  .aisle{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#8b93a1;margin:16px 0 6px}
+  .aisle:first-child{margin-top:0}
+  .map-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f4f5f7;flex-wrap:wrap}
+  .map-name{flex:1;min-width:170px;font-weight:500}
+  .map-row select{max-width:280px}
+  .ok{color:#198754}.warn{color:#c0392b}
+  #log{font-family:ui-monospace,monospace;font-size:.82rem;background:#fff;border:1px solid #e9ebef;border-radius:10px;padding:12px;max-height:240px;overflow:auto;display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <h1><i class="bi bi-basket"></i> Courses & garde-manger</h1>
+    <p><strong>1.</strong> Clique sur « Voir au drive » : la recherche s'ouvre dans ton drive Château d'Olonne,
+       déjà <strong>triée du moins cher au plus cher</strong> (prix au kilo).
+       <strong>2.</strong> Ajoute le produit à ton panier, coche la ligne et tape le prix réel.
+       <strong>3.</strong> En bas, « Tout enregistrer » remplit le site : produits, recettes et coûts.</p>
+    <p class="mb-0" style="opacity:.85;font-size:.88rem">Les prix affichés au départ sont des estimations : remplace-les au fur et à mesure.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Les produits à acheter <span class="text-muted fw-normal">— un format de chaque, de quoi faire chaque plat une fois</span></div>
+    <div class="card-body"><div id="ingBox"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">2. Les recettes <span class="text-muted fw-normal">— vérifie que chaque recette pointe sur le bon plat</span></div>
+    <div class="card-body"><div id="mapBox">Chargement du menu…</div></div>
+  </div>
+
+  <button class="btn btn-danger btn-lg w-100 mb-3" id="go" disabled>
+    <i class="bi bi-cloud-arrow-up"></i> Tout enregistrer dans le site
+  </button>
+  <div id="log"></div>
+  <p class="text-muted small">Tu peux relancer cette page sans risque : un produit déjà présent est mis à jour, pas dupliqué.</p>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyDd24327mfgTZZ7IvvB0TYNIBfn8AKmd-w",
+  authDomain:"mmh-resto.firebaseapp.com",
+  projectId:"mmh-resto",
+  storageBucket:"mmh-resto.firebasestorage.app",
+  messagingSenderId:"831695759118",
+  appId:"1:831695759118:web:45a25ce77b0a5289c3995f"
+});
+const db=firebase.firestore(), auth=firebase.auth();
+const $=id=>document.getElementById(id);
+const esc=v=>String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+// =====================================================================
+// LES PRODUITS
+// key    : identifiant interne (sert à relier les recettes)
+// name   : nom affiché dans le site
+// pack   : le format à prendre au drive (le moins cher : marque ECO+/repère)
+// unit   : la façon dont on le compte en cuisine
+// qty    : combien d'unités le format contient
+// price  : ESTIMATION en euros, à corriger avec le ticket
+// =====================================================================
+const AISLES=["Viande & traiteur","Crèmerie","Fruits & légumes","Épicerie","Surgelés","Boissons","À acheter ailleurs"];
+// PRIX RÉELS relevés sur le panier Leclerc Château d'Olonne du 09/08/2026 (total 77,02 €)
+const ING=[
+ {k:"poulet",   a:0, name:"Filet de poulet",      pack:"Filet poulet blanc Douce France x2 - 300 g",     unit:"filets",   qty:2,  price:4.14},
+ {k:"saumon",   a:0, name:"Saumon fumé",          pack:"Dés de saumon Ronde des Mers 90 g",              unit:"portions", qty:3,  price:3.99},
+ {k:"jambon",   a:0, name:"Jambon blanc",         pack:"Jambon Supérieur Fleury Michon x2 - 70 g",       unit:"tranches", qty:2,  price:1.74},
+
+ {k:"burrata",  a:1, name:"Burrata",              pack:"Burrata di Bufala Les Croisés 125 g",            unit:"portions", qty:2,  price:2.91},
+ {k:"stmoret",  a:1, name:"St Môret",             pack:"Fromage à tartiner St Môret 300 g",              unit:"portions", qty:12, price:3.37},
+ {k:"cheddar",  a:1, name:"Fromage à burger",     pack:"Cheddar Burger Les Croisés x10 - 200 g",         unit:"tranches", qty:10, price:1.25},
+ {k:"beurre",   a:1, name:"Beurre",               pack:"Beurre Les Croisés demi-sel 125 g",              unit:"noix",     qty:12, price:1.49},
+ {k:"fblanc",   a:1, name:"Fromage blanc",        pack:"Fromage blanc nature Délisse 500 g",             unit:"portions", qty:10, price:1.29},
+ {k:"oeufs",    a:1, name:"Œufs",                 pack:"Œufs plein air Nos Régions x4",                  unit:"œufs",     qty:4,  price:0.99},
+ {k:"lait",     a:1, name:"Lait",                 pack:"Lait frais demi-écrémé Délisse 1 L",             unit:"portions", qty:10, price:1.10},
+ {k:"yaourt",   a:1, name:"Yaourt nature",        pack:"Yaourts Délisse nature 4 × 125 g",               unit:"pots",     qty:4,  price:0.65},
+ {k:"chantilly",a:1, name:"Chantilly",            pack:"Chantilly Délisse sous pression 250 g",          unit:"portions", qty:8,  price:1.85},
+
+ {k:"melon",    a:2, name:"Melon",                pack:"Melon Charentais (1 pièce)",                     unit:"parts",    qty:8,  price:1.58},
+ {k:"avocat",   a:2, name:"Avocat",               pack:"Avocats Eco+ filet x3",                          unit:"avocats",  qty:3,  price:1.99},
+ {k:"banane",   a:2, name:"Banane",               pack:"Bananes Eco+ x4",                                unit:"bananes",  qty:4,  price:0.79},
+ {k:"gaspacho", a:2, name:"Gaspacho",             pack:"Gazpacho L'Original Alvalle 1 L",                unit:"portions", qty:5,  price:3.49},
+
+ {k:"mayo",     a:3, name:"Mayonnaise",           pack:"Mayonnaise allégée Rustica 450 g",               unit:"portions", qty:20, price:1.14},
+ {k:"riz",      a:3, name:"Riz",                  pack:"Riz basmati Comptoir du grain 5 × 90 g",         unit:"portions", qty:5,  price:1.81},
+ {k:"ketchup",  a:3, name:"Ketchup",              pack:"Ketchup Heinz Zéro 230 g",                       unit:"portions", qty:12, price:1.92},
+ {k:"huileol",  a:3, name:"Huile d'olive",        pack:"Huile d'olive Rustica vierge extra 50 cl",       unit:"filets",   qty:30, price:4.49},
+ {k:"huilefri", a:3, name:"Huile de friture",     pack:"Huile de tournesol Rustica 50 cl",               unit:"bains",    qty:2,  price:1.42},
+ {k:"oignonsf", a:3, name:"Oignons frits",        pack:"Oignons frits Kühne 100 g",                      unit:"portions", qty:10, price:1.21},
+ {k:"croutons", a:3, name:"Croûtons à l'ail",     pack:"Croûtons Epi d'Or ail & fines herbes 60 g",      unit:"portions", qty:5,  price:0.62},
+ {k:"chapelure",a:3, name:"Chapelure",            pack:"Chapelure dorée Tipiak 250 g",                   unit:"portions", qty:12, price:0.61},
+ {k:"soja",     a:3, name:"Sauce soja",           pack:"Sauce soja Tables du Monde 125 ml",              unit:"portions", qty:12, price:0.83},
+ {k:"brioche",  a:3, name:"Brioche",              pack:"Brioche tranchée Epi d'Or 500 g",                unit:"tranches", qty:14, price:1.65},
+ {k:"nutella",  a:3, name:"Pâte à tartiner",      pack:"Nutella 630 g",                                  unit:"portions", qty:20, price:5.15},
+ {k:"sucre",    a:3, name:"Sucre",                pack:"Sucre en poudre Eco+ 1 kg",                      unit:"portions", qty:30, price:0.77},
+ {k:"levure",   a:3, name:"Levure chimique",      pack:"Levure chimique Tablier Blanc x6",               unit:"sachets",  qty:6,  price:0.26},
+ {k:"sucrevan", a:3, name:"Sucre vanillé",        pack:"Sucre vanillé Tablier Blanc x10",                unit:"sachets",  qty:10, price:0.79},
+
+ {k:"steak",    a:4, name:"Steak haché",          pack:"Haché Charal Façon Bouchère 8 × 110 g",          unit:"steaks",   qty:8,  price:11.65},
+ {k:"frites",   a:4, name:"Frites",               pack:"Frites allumettes Pom'lisse 600 g",              unit:"portions", qty:4,  price:1.26},
+
+ {k:"coca",     a:5, name:"Coca-Cola",            pack:"Coca-Cola Original 1 L",                         unit:"verres",   qty:4,  price:1.75},
+ {k:"cocazero", a:5, name:"Coca-Cola Zéro",       pack:"Coca-Cola sans sucres 1 L",                      unit:"verres",   qty:4,  price:1.74},
+ {k:"icetea",   a:5, name:"Ice Tea",              pack:"Lipton Ice Tea pêche 1,75 L",                    unit:"verres",   qty:7,  price:1.73},
+ {k:"eaugaz",   a:5, name:"Eau pétillante",       pack:"Badoit rouge 6 × 1 L",                           unit:"verres",   qty:24, price:3.60},
+
+ {k:"pain",     a:6, name:"Pain blanc tranché",   pack:"Maison Virtel — boule de pain blanc tranchée",   unit:"tranches", qty:20, price:2.50},
+ {k:"farine",   a:6, name:"Farine",               pack:"À la maison — sert aux muffins uniquement",      unit:"portions", qty:20, price:0.85},
+ {k:"iceberg",  a:6, name:"Salade iceberg",       pack:"Intermarché — 1 salade",                         unit:"portions", qty:6,  price:1.30},
+ {k:"concombre",a:6, name:"Concombre",            pack:"Intermarché — 1 concombre",                      unit:"portions", qty:8,  price:1.00},
+ {k:"basilic",  a:6, name:"Basilic",              pack:"Intermarché — barquette de basilic frais",                   unit:"portions", qty:8,  price:2.00},
+ {k:"aigredoux",a:6, name:"Sauce aigre-douce",    pack:"Intermarché — flacon",                           unit:"portions", qty:10, price:1.80},
+ {k:"sel",      a:6, name:"Sel & poivre",         pack:"À la maison — décoche si tu dois en racheter",   unit:"services", qty:40, price:0.00},
+ {k:"curedent", a:6, name:"Pics apéritif",        pack:"À la maison — rien à acheter",                   unit:"pics",     qty:50, price:0.00}
+];
+
+// =====================================================================
+// LES RECETTES — quantité par portion, en unités du produit ci-dessus
+// =====================================================================
+const RECIPES=[
+ {dish:"Gaspacho revisité",       lines:{gaspacho:1, burrata:0.5, croutons:1, basilic:1, huileol:1}},
+ {dish:"Tartine gourmande",       lines:{pain:1, beurre:1, avocat:0.5, saumon:1, concombre:1, huileol:1}},
+ {dish:"Roulés melon & jambon",   lines:{jambon:1, stmoret:1, melon:1, curedent:2}},
+ {dish:"MMH Crousty",             lines:{poulet:1, riz:1, chapelure:1, oeufs:1, aigredoux:1, fblanc:1, mayo:1, soja:1, oignonsf:1, huilefri:0.2, sel:1}},
+ {dish:"MMH la Salade !",         lines:{iceberg:1, croutons:1, melon:1, oeufs:1, huileol:1, sel:1}},
+ {dish:"Croque-Monsieur & frites",lines:{pain:2, beurre:1, cheddar:1, jambon:1, frites:1, ketchup:1}},
+ {dish:"Croque MMH & frites",     lines:{pain:2, beurre:1, cheddar:1, steak:1, frites:1, ketchup:1}},
+ {dish:"Brioche perdue",          lines:{brioche:2, beurre:1, lait:1, sucre:1, nutella:1}},
+ {dish:"Banane flambée",          lines:{banane:1, sucre:1, nutella:1, chantilly:1, beurre:1}},
+ {dish:"Steak & frites",          lines:{steak:1, frites:1, iceberg:0.5, ketchup:1}},
+ {dish:"Croque Mini'z",           lines:{pain:2, beurre:1, cheddar:1, steak:1, frites:1}},
+ {dish:"MMH Muffin",              lines:{oeufs:1, yaourt:0.5, levure:0.2, farine:1, sucre:1, sucrevan:0.5, huilefri:0.1, beurre:1, nutella:1, chantilly:1}},
+ {dish:"Eau pétillante",          lines:{eaugaz:1}},
+ {dish:"Coca-Cola",               lines:{coca:1}},
+ {dish:"Coca-Cola Zéro",          lines:{cocazero:1}},
+ {dish:"Ice Tea",                 lines:{icetea:1}}
+];
+
+// ---------- Lien direct vers la recherche dans TON drive ----------
+// tri=4 : classement par prix au kilo/litre croissant, le moins cher en premier.
+const DRIVE="https://fd2-courses.leclercdrive.fr/magasin-198502-198502-Chateau-dOlonne/recherche.aspx";
+const TERMS={ // termes de recherche plus efficaces que le nom affiché
+  poulet:"filet de poulet", steak:"steak hache surgele", jambon:"jambon blanc",
+  saumon:"saumon fume", burrata:"burrata", stmoret:"fromage tartiner nature",
+  cheddar:"cheddar tranches", beurre:"beurre doux", fblanc:"fromage blanc nature", cocazero:"coca cola zero",
+  oeufs:"oeufs", lait:"lait demi ecreme", yaourt:"yaourt nature", chantilly:"creme chantilly",
+  melon:"melon", avocat:"avocat", concombre:"concombre", iceberg:"salade iceberg",
+  banane:"banane", basilic:"basilic", citron:"citron",
+  gaspacho:"gaspacho", croutons:"croutons ail", pain:"pain de mie", brioche:"brioche tranchee",
+  riz:"riz long grain", farine:"farine ble", chapelure:"chapelure", aigredoux:"sauce aigre douce",
+  mayo:"mayonnaise", soja:"sauce soja", oignonsf:"oignons frits", nutella:"pate a tartiner",
+  sucre:"sucre en poudre", sucrevan:"sucre vanille", levure:"levure chimique",
+  huileol:"huile olive", huilefri:"huile tournesol", ketchup:"ketchup", sel:"sel fin",
+  frites:"frites surgelees", eauplate:"eau de source", eaugaz:"eau gazeuse",
+  coca:"coca cola", icetea:"the glace peche", curedent:"pics apero"
+};
+// Les 6 produits manquants ne sont pas au drive : on pointe vers Intermarché.
+const INTER="https://www.intermarche.com/recherche/";
+const INTER_TERMS={
+  pain:"pain de mie", farine:"farine de ble", iceberg:"salade iceberg",
+  concombre:"concombre", basilic:"basilic frais", aigredoux:"sauce aigre douce",
+  sel:"sel fin", curedent:"pique apero"
+};
+function driveUrl(k){
+  if(INTER_TERMS[k]) return INTER+encodeURIComponent(INTER_TERMS[k]);
+  return DRIVE+"?TexteRecherche="+encodeURIComponent(TERMS[k]||k)+"&tri=4";
+}
+const shopName=k=>INTER_TERMS[k]?"Chercher chez Intermarché":"Voir au drive";
+
+// ---------- Affichage des produits ----------
+function renderIng(){
+  let html='';
+  AISLES.forEach((a,ai)=>{
+    const list=ING.filter(i=>i.a===ai); if(!list.length) return;
+    html+=`<div class="aisle">${esc(a)}</div>`;
+    list.forEach(i=>{
+      html+=`<div class="ing-row" data-row="${i.k}">
+        <input type="checkbox" class="chk" data-k="${i.k}" title="Acheté">
+        <span class="ing-name">${esc(i.name)}</span>
+        <span class="ing-pack">${esc(i.pack)}</span>
+        <a class="btn btn-outline-primary btn-sm drive-btn" target="_blank" rel="noopener"
+           href="${driveUrl(i.k)}"><i class="bi bi-search"></i> ${shopName(i.k)}</a>
+        <div class="input-group input-group-sm" style="width:150px">
+          <input type="number" step="0.01" class="form-control q" data-k="${i.k}" value="${i.qty}">
+          <span class="input-group-text">${esc(i.unit)}</span>
+        </div>
+        <div class="input-group input-group-sm" style="width:120px">
+          <span class="input-group-text">€</span>
+          <input type="number" step="0.01" class="form-control p" data-k="${i.k}" value="${i.price.toFixed(2)}">
+        </div>
+      </div>`;
+    });
+  });
+  const total=ING.reduce((s,i)=>s+i.price,0);
+  html+=`<div class="mt-3 fs-5">Panier estimé : <strong id="tot">€${total.toFixed(2)}</strong>
+         <span class="text-muted fs-6">— à confirmer avec le vrai ticket</span></div>`;
+  $("ingBox").innerHTML=html;
+  $("ingBox").querySelectorAll(".p").forEach(el=>el.oninput=()=>{
+    const k=el.dataset.k, v=parseFloat(el.value)||0;
+    (ING.find(i=>i.k===k)||{}).price=v;
+    $("tot").textContent='€'+ING.reduce((s,i)=>s+i.price,0).toFixed(2);
+  });
+  $("ingBox").querySelectorAll(".q").forEach(el=>el.oninput=()=>{
+    (ING.find(i=>i.k===el.dataset.k)||{}).qty=parseFloat(el.value)||0;
+  });
+  // suivi des achats : coché = déjà mis au panier (gardé sur cet appareil)
+  let done=[]; try{ done=JSON.parse(localStorage.getItem("mmh_seed_done"))||[]; }catch(e){}
+  $("ingBox").querySelectorAll(".chk").forEach(cb=>{
+    cb.checked=done.includes(cb.dataset.k);
+    cb.closest(".ing-row").classList.toggle("done",cb.checked);
+    cb.onchange=()=>{
+      let d=[]; try{ d=JSON.parse(localStorage.getItem("mmh_seed_done"))||[]; }catch(e){}
+      if(cb.checked){ if(!d.includes(cb.dataset.k)) d.push(cb.dataset.k); }
+      else d=d.filter(x=>x!==cb.dataset.k);
+      localStorage.setItem("mmh_seed_done",JSON.stringify(d));
+      cb.closest(".ing-row").classList.toggle("done",cb.checked);
+    };
+  });
+}
+renderIng();
+
+// ---------- Association recettes ↔ plats du site ----------
+let dishes=[];
+const norm=s=>String(s||"").toLowerCase().trim()
+  .normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g," ").trim();
+
+function guess(name){
+  const n=norm(name);
+  let best=null,score=0;
+  dishes.forEach(d=>{
+    const dn=norm(d.name);
+    let s=0;
+    if(dn===n) s=100;
+    else if(dn.includes(n)||n.includes(dn)) s=70;
+    else{
+      const a=new Set(n.split(" ")), b=dn.split(" ");
+      s=b.filter(w=>w.length>2&&a.has(w)).length*18;
+    }
+    if(s>score){score=s;best=d;}
+  });
+  return score>=18?best:null;
+}
+
+function renderMap(){
+  if(!dishes.length){ $("mapBox").innerHTML='<div class="text-danger">Aucun plat trouvé dans le menu du site.</div>'; return; }
+  $("mapBox").innerHTML=RECIPES.map((r,i)=>{
+    const g=guess(r.dish);
+    const opts='<option value="">— ignorer cette recette —</option>'+
+      dishes.map(d=>`<option value="${d.id}" ${g&&g.id===d.id?"selected":""}>${esc(d.name)}</option>`).join("");
+    const n=Object.keys(r.lines).length;
+    return `<div class="map-row">
+      <span class="map-name">${esc(r.dish)} <span class="text-muted small">${n} ingrédients</span></span>
+      <i class="bi bi-arrow-right text-muted"></i>
+      <select class="form-select form-select-sm dish-sel" data-i="${i}">${opts}</select>
+      <span class="small ${g?"ok":"warn"}">${g?'<i class="bi bi-check-circle"></i> trouvé':'<i class="bi bi-exclamation-triangle"></i> à choisir'}</span>
+    </div>`;
+  }).join("");
+}
+
+auth.onAuthStateChanged(u=>{
+  if(!u){
+    $("mapBox").innerHTML='<div class="alert alert-warning mb-0">Connecte-toi d\'abord sur <a href="admin-login.html">la page admin</a>, puis reviens ici.</div>';
+    return;
+  }
+  db.collection("menuItems").get().then(s=>{
+    dishes=s.docs.map(d=>({id:d.id,...d.data()}));
+    renderMap();
+    $("go").disabled=false;
+  }).catch(e=>{ $("mapBox").innerHTML='<div class="text-danger">Erreur : '+esc(e.message)+'</div>'; });
+});
+
+// ---------- Écriture ----------
+function log(msg,cls){ const l=$("log"); l.style.display='block'; l.innerHTML+=`<div class="${cls||''}">${esc(msg)}</div>`; l.scrollTop=l.scrollHeight; }
+
+$("go").onclick=async ()=>{
+  $("go").disabled=true; $("go").textContent="Enregistrement…"; $("log").innerHTML='';
+  try{
+    // 1. produits (mise à jour si le nom existe déjà)
+    const snap=await db.collection("ingredients").get();
+    const existing={}; snap.docs.forEach(d=>{ existing[norm((d.data()||{}).name)]=d.id; });
+    const idOf={};
+    for(const i of ING){
+      const data={name:i.name, unit:i.unit, stockQty:i.qty, buyPrice:i.price};
+      const known=existing[norm(i.name)];
+      if(known){ await db.collection("ingredients").doc(known).update(data); idOf[i.k]=known; }
+      else{
+        const ref=db.collection("ingredients").doc();
+        await ref.set(Object.assign(data,{createdAt:firebase.firestore.FieldValue.serverTimestamp()}));
+        idOf[i.k]=ref.id;
+      }
+    }
+    log(ING.length+" produits enregistrés.","ok");
+
+    // 2. achats du jour (pour le bilan « courses payées »)
+    const today=new Date(); const d2=n=>String(n).padStart(2,'0');
+    const date=today.getFullYear()+'-'+d2(today.getMonth()+1)+'-'+d2(today.getDate());
+    for(const i of ING){
+      await db.collection("purchases").add({
+        name:i.name, amount:i.price, qty:i.qty, unit:i.unit, date:date,
+        ingredientId:idOf[i.k], createdAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    log("Ticket de caisse du jour créé.","ok");
+
+    // 3. recettes
+    let n=0;
+    const sels=[...document.querySelectorAll(".dish-sel")];
+    for(const sel of sels){
+      const dishId=sel.value; if(!dishId) continue;
+      const r=RECIPES[parseInt(sel.dataset.i)];
+      const recipe=Object.keys(r.lines)
+        .filter(k=>idOf[k])
+        .map(k=>({ingredientId:idOf[k], qty:r.lines[k]}));
+      await db.collection("menuItems").doc(dishId).update({recipe:recipe});
+      n++;
+    }
+    log(n+" recettes reliées à leurs plats.","ok");
+    log("Terminé ! Ouvre l'onglet Coûts de l'admin.","ok");
+    $("go").textContent="Terminé ✓";
+  }catch(e){
+    console.error(e);
+    log("Erreur : "+e.message,"warn");
+    $("go").disabled=false; $("go").textContent="Réessayer";
+  }
+};
+</script>
+</body>
+</html>
