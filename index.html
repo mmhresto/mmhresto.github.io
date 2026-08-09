@@ -75,8 +75,39 @@ h1,h2,h3,h4{margin:0}
 .hero-content p{font-size:clamp(1rem,1.5vw,1.15rem);color:var(--cream-soft);max-width:46ch;line-height:1.7;font-weight:300;margin-bottom:30px}
 .hero-btn{display:inline-flex;align-items:center;gap:9px;padding:15px 30px;border-radius:999px;background:var(--gold);color:#231a10;font-weight:500;font-size:.95rem;transition:transform .25s var(--ease),background .2s}
 .hero-btn:hover{background:#e6c377;transform:translateY(-2px)}
-.scroll-down{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);width:44px;height:44px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line);color:var(--cream-soft);animation:bob 2.4s ease-in-out infinite}
+.scroll-down{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);width:44px;height:44px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line);color:var(--cream-soft);animation:bob 2.4s ease-in-out infinite;z-index:3}
 @keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(6px)}}
+
+/* ---------- Hero : les 5 ans ---------- */
+.hero-badge{display:inline-flex;align-items:center;gap:9px;margin-bottom:20px;padding:8px 18px;border-radius:999px;
+  font-family:var(--sans);font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);
+  background:rgba(216,178,94,.1);border:1px solid rgba(216,178,94,.4);
+  box-shadow:0 0 26px rgba(216,178,94,.18);animation:badgeIn 1s var(--ease) both}
+.hero-badge i{font-size:.85rem}
+@keyframes badgeIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.hero-five{position:relative;display:inline-block;color:var(--gold);
+  background:linear-gradient(100deg,#b8923f 0%,#f0d79a 32%,#fff6e2 46%,#f0d79a 60%,#b8923f 100%);
+  background-size:250% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  animation:shine 6s linear infinite}
+@keyframes shine{from{background-position:180% 0}to{background-position:-80% 0}}
+.hero-content h1{animation:heroIn 1.1s var(--ease) .12s both}
+.hero-content p{animation:heroIn 1.1s var(--ease) .24s both}
+.hero-btn{animation:heroIn 1.1s var(--ease) .36s both}
+@keyframes heroIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+
+/* Confettis dorés : discrets, lents, sans surcharger */
+.confetti{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:1}
+.confetti i{position:absolute;top:-8vh;width:7px;height:12px;border-radius:1px;opacity:0;
+  animation:fall linear infinite}
+@keyframes fall{
+  0%{opacity:0;transform:translateY(-10vh) rotate(0deg)}
+  8%{opacity:.85}
+  85%{opacity:.7}
+  100%{opacity:0;transform:translateY(112vh) rotate(560deg)}}
+@media(prefers-reduced-motion:reduce){
+  .confetti{display:none}
+  .hero-five{animation:none}
+  .hero-content h1,.hero-content p,.hero-btn,.hero-badge{animation:none}}
 
 /* ---------- Sections & titres ---------- */
 section{position:relative;padding-block:clamp(60px,9vw,110px);scroll-margin-top:96px}
@@ -86,17 +117,25 @@ section{position:relative;padding-block:clamp(60px,9vw,110px);scroll-margin-top:
 
 /* ---------- À propos ---------- */
 .about-content{display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,5vw,60px);align-items:center}
-.about-img{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 70px rgba(0,0,0,.5)}
-.about-img img{width:100%;height:100%;object-fit:cover;aspect-ratio:4/5}
-.img-overlay{position:absolute;inset:0;background:linear-gradient(160deg,transparent 40%,rgba(20,15,13,.5));z-index:1}
+/* Deux photos d'archive, l'une sous l'autre */
+.about-gallery{display:flex;flex-direction:column;gap:18px}
+.about-shot{margin:0;position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);
+  box-shadow:0 24px 60px rgba(0,0,0,.5);transition:transform .4s var(--ease),border-color .3s}
+.about-shot:hover{transform:translateY(-4px);border-color:rgba(216,178,94,.4)}
+.about-shot img{display:block;width:100%;aspect-ratio:3/2;object-fit:cover}
+.about-shot figcaption{position:absolute;left:0;right:0;bottom:0;padding:34px 18px 14px;
+  font-size:.82rem;font-weight:300;color:var(--cream-soft);
+  background:linear-gradient(to top,rgba(12,9,8,.9),transparent)}
 .about-text h3{font-family:var(--serif);font-size:clamp(1.6rem,3vw,2.2rem);font-weight:500;margin-bottom:18px}
 .about-text p{color:var(--cream-soft);font-weight:300;line-height:1.8;margin-bottom:14px}
-.signature{font-family:var(--serif);font-style:italic;font-size:1.8rem;color:var(--gold);margin-top:10px}
-@media(max-width:820px){.about-content{grid-template-columns:1fr}.about-img{max-width:420px;margin-inline:auto}}
+.signature{font-family:var(--serif);font-style:italic;font-size:clamp(1.2rem,3.4vw,1.6rem);color:var(--gold);margin-top:18px;
+  padding-top:16px;border-top:1px solid var(--line);display:inline-block}
+@media(max-width:820px){.about-content{grid-template-columns:1fr}.about-gallery{max-width:520px;margin-inline:auto}}
 
 /* ---------- Menu ---------- */
-.menu-tabs{display:flex;gap:26px;overflow-x:auto;scrollbar-width:none;justify-content:center;border-bottom:1px solid var(--line);margin-bottom:34px;padding-bottom:0;
-  position:sticky;top:64px;z-index:20;background:rgba(20,15,13,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.menu-tabs{display:flex;gap:26px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;justify-content:center;border-bottom:1px solid var(--line);margin-bottom:26px;padding-bottom:0;
+  position:sticky;top:64px;z-index:20;background:rgba(20,15,13,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  touch-action:pan-x;overscroll-behavior-x:contain}
 .menu-tabs::-webkit-scrollbar{display:none}
 .tab-count{display:inline-block;margin-left:7px;font-family:var(--sans);font-size:.62rem;font-weight:600;vertical-align:middle;
   color:var(--gold);background:rgba(216,178,94,.16);border-radius:999px;padding:2px 7px;line-height:1.4}
@@ -112,7 +151,23 @@ section{position:relative;padding-block:clamp(60px,9vw,110px);scroll-margin-top:
 .menu-nav-btn:hover:not(:disabled){border-color:var(--gold);color:var(--cream)}
 .menu-nav-btn:disabled{opacity:.25;cursor:default}
 .menu-nav-btn:disabled span{display:none}
-@media (max-width:520px){.menu-tabs{gap:18px;justify-content:flex-start;padding-left:2px}.menu-nav-now{display:none}.menu-nav-btn{max-width:48%}}
+/* Téléphone : les plats défilent DANS une zone de hauteur fixe, pour que les
+   boutons Entrées / Desserts restent toujours au même endroit de l'écran. */
+@media (max-width:768px){
+  .menu-tabs{gap:18px;justify-content:flex-start;padding-left:2px;margin-bottom:16px}
+  .menu-nav-now{display:none}
+  .menu-nav-btn{max-width:48%}
+  #menuContainer{height:clamp(300px,52vh,540px);overflow-y:auto;overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;
+    padding:2px 4px 10px 2px;
+    /* le contenu s'estompe en bas : on voit qu'il y a une suite */
+    -webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 42px),transparent 100%);
+            mask-image:linear-gradient(to bottom,#000 calc(100% - 42px),transparent 100%)}
+  #menuContainer::-webkit-scrollbar{width:3px}
+  #menuContainer::-webkit-scrollbar-thumb{background:rgba(216,178,94,.35);border-radius:3px}
+  .menu-items{gap:14px}
+  .menu-nav{margin-top:14px;padding-top:16px}
+}
 .tab-btn{background:none;border:none;color:var(--cream-mute);font-family:var(--serif);font-size:1.35rem;font-weight:500;padding:0 2px 14px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .2s}
 .tab-btn:hover{color:var(--cream-soft)}
 .tab-btn.active{color:var(--cream);border-color:var(--gold)}
@@ -150,14 +205,6 @@ section{position:relative;padding-block:clamp(60px,9vw,110px);scroll-margin-top:
 .menu-item.unavailable:hover{transform:none}
 .sold-out-badge{position:absolute;top:14px;right:14px;background:var(--gold-deep);color:#231a10;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px;font-weight:600}
 
-/* ---------- Galerie ---------- */
-.gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.gallery-item{position:relative;border-radius:var(--r);overflow:hidden;cursor:pointer;aspect-ratio:4/3;border:1px solid var(--line)}
-.gallery-item img{width:100%;height:100%;object-fit:cover;transition:transform .5s var(--ease)}
-.gallery-item:hover img{transform:scale(1.08)}
-.gallery-overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(20,15,13,.4);opacity:0;transition:opacity .3s;color:var(--gold);font-size:1.6rem}
-.gallery-item:hover .gallery-overlay{opacity:1}
-@media(max-width:760px){.gallery-grid{grid-template-columns:repeat(2,1fr)}}
 
 /* ---------- Chefs ---------- */
 .chefs-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:26px;max-width:820px;margin-inline:auto}
@@ -254,9 +301,6 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
 .footer-container{display:grid;grid-template-columns:1.7fr 1fr 1.2fr;gap:34px}
 .footer-logo{font-family:var(--serif);font-size:1.5rem;font-weight:600;color:var(--cream)}
 .footer-about p{margin-top:14px;color:var(--cream-mute);font-size:.9rem;font-weight:300;line-height:1.65;max-width:36ch}
-.footer-social{display:flex;gap:12px;margin-top:18px}
-.footer-social a{width:38px;height:38px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line);color:var(--cream-soft);transition:.2s}
-.footer-social a:hover{background:var(--gold);color:#231a10;border-color:transparent}
 .footer-links h3,.footer-admin h3{font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:16px}
 .footer-links ul{list-style:none;padding:0;margin:0;display:grid;gap:10px}
 .footer-links a{color:var(--cream-soft);font-size:.9rem}
@@ -275,8 +319,10 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
   background:rgba(28,20,16,.9);border:1px solid rgba(255,255,255,.14);box-shadow:0 30px 80px rgba(0,0,0,.6);
   backdrop-filter:blur(24px) saturate(1.4);-webkit-backdrop-filter:blur(24px) saturate(1.4)}
 .modal-overlay.active .modal-content{transform:none}
-.modal-title{font-family:var(--serif);font-size:1.7rem;font-weight:500;margin-bottom:10px}
-.modal-message{color:var(--cream-soft);margin:12px 0;line-height:1.55}
+.modal-title{font-family:var(--serif);font-size:clamp(1.35rem,5.2vw,1.7rem);font-weight:500;margin-bottom:10px;
+  line-height:1.2;text-wrap:balance;overflow-wrap:break-word;hyphens:none}
+.modal-message{color:var(--cream-soft);margin:12px 0;line-height:1.55;font-size:clamp(.9rem,3.6vw,1rem);
+  text-wrap:pretty;overflow-wrap:break-word}
 .modal-buttons{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:18px}
 .modal-btn{padding:11px 20px;border-radius:12px;font-weight:500;cursor:pointer;border:1px solid transparent;min-width:110px;transition:.2s;font-size:.95rem}
 .modal-btn-cancel{background:transparent;border-color:var(--line);color:var(--cream)}
@@ -306,13 +352,7 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
 .client-rating{--x:0}
 
 /* ---------- Lightbox ---------- */
-.lightbox{position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;padding:24px;
   background:rgba(7,5,4,.9);opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s}
-.lightbox.active{opacity:1;visibility:visible}
-.lightbox-content{max-width:900px;width:100%;text-align:center}
-.lightbox-content img{width:100%;max-height:78vh;object-fit:contain;border-radius:var(--r)}
-.lightbox-caption{margin-top:14px;color:var(--cream-soft);font-family:var(--serif);font-style:italic;font-size:1.2rem}
-.lightbox-close{position:absolute;top:22px;right:26px;background:none;border:none;color:var(--cream);font-size:2rem;cursor:pointer;line-height:1}
 
 /* ---------- Utilitaires ---------- */
 .text-center{text-align:center}
@@ -341,7 +381,6 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
                         <li><a href="#home">Accueil</a></li>
                         <li><a href="#about">À propos</a></li>
                         <li><a href="#menu">Menu</a></li>
-                        <li><a href="#gallery">Galerie</a></li>
                         <li><a href="#chefs">Chefs</a></li>
                         <li><a href="#contact">Contact</a></li>
                     </ul>
@@ -357,10 +396,12 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
     <!-- Hero Section -->
     <section class="hero" id="home">
         <div class="hero-content">
-            <h1>L'art culinaire réinventé</h1>
-            <p>Découvrez une expérience gastronomique exceptionnelle où tradition et innovation se rencontrent pour éveiller vos sens.</p>
-            <a href="#menu" class="hero-btn">Notre menu</a>
+            <span class="hero-badge"><i class="fas fa-champagne-glasses"></i> 2021 — 2026 · cinq ans déjà</span>
+            <h1>On fête nos <span class="hero-five">5&nbsp;ans</span></h1>
+            <p>Cinq étés à cuisiner pour ceux qu'on aime. Ce soir, la table est mise pour vous.</p>
+            <a href="#menu" class="hero-btn">Voir le menu de la fête</a>
         </div>
+        <div class="confetti" id="confetti" aria-hidden="true"></div>
         <a href="#about" class="scroll-down"><i class="fas fa-chevron-down"></i></a>
     </section>
 
@@ -371,16 +412,22 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
                 <h2>Notre Histoire</h2>
             </div>
             <div class="about-content">
-                <div class="about-img">
-                    <div class="img-overlay"></div>
-                    <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1374&q=80" alt="Notre restaurant">
+                <div class="about-gallery">
+                    <figure class="about-shot">
+                        <img src="assets/img/histoire-1.jpg" alt="La famille attablée sous la tonnelle, au premier service">
+                        <figcaption>Le tout premier service, sous la tonnelle du jardin.</figcaption>
+                    </figure>
+                    <figure class="about-shot">
+                        <img src="assets/img/histoire-2.jpg" alt="Le service en tablier rouge, une assiette de tomates-mozzarella à la main">
+                        <figcaption>Tablier rouge et assiette bien tenue : le service est lancé.</figcaption>
+                    </figure>
                 </div>
                 <div class="about-text">
-                    <h3>Une tradition d'excellence depuis 1985</h3>
-                    <p>Fondé par le chef étoilé Jean-Luc Dubois, Mmh restaurant incarne l'excellence culinaire française avec une touche contemporaine. Notre restaurant est rapidement devenu une référence gastronomique, récompensé par deux étoiles au guide Michelin.</p>
-                    <p>Nous nous engageons à utiliser uniquement des ingrédients locaux et de saison, sourcés auprès de producteurs passionnés partageant notre vision de la qualité et du respect de l'environnement.</p>
-                    <p>Chaque plat est une œuvre d'art, une symphonie de saveurs soigneusement orchestrée pour vous offrir une expérience mémorable.</p>
-                    <div class="signature">Jean-Luc Dubois</div>
+                    <h3>Tout a commencé dans le jardin, en 2021</h3>
+                    <p>Un été, une tonnelle rayée, des cousins qui trouvent que servir la famille serait plus drôle que de mettre la table. On a écrit un menu à la main, enfilé un tablier, et pris les commandes des grands-parents comme si c'était un vrai restaurant.</p>
+                    <p>Depuis, le principe n'a pas bougé : on cuisine ce qu'on aime vraiment manger, on soigne l'assiette, et personne ne repart en ayant encore faim. Le reste, la carte, les commandes et le petit site que vous êtes en train de lire, on l'a construit nous-mêmes, année après année.</p>
+                    <p>Merci pour votre confiance depuis 5 ans.</p>
+                    <div class="signature">Mayeul JANSON &amp; Malo de TINGUY</div>
                 </div>
             </div>
         </div>
@@ -411,54 +458,6 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
             </div>
         </div>
     </section>
-
-    <!-- Gallery Section -->
-<section class="gallery" id="gallery">
-    <div class="container">
-        <div class="section-title">
-            <h2>Notre Univers</h2>
-        </div>
-        <div class="gallery-grid">
-            <div class="gallery-item" data-image="https://images.unsplash.com/photo-1544025162-d76694265947?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1469&q=80" data-caption="Plat gastronomique signature">
-                <img src="https://images.unsplash.com/photo-1544025162-d76694265947?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1469&q=80" alt="Plat gastronomique">
-                <div class="gallery-overlay">
-                    <i class="fas fa-search-plus"></i>
-                </div>
-            </div>
-            <div class="gallery-item" data-image="https://images.unsplash.com/photo-1559847844-5315695dadae?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1398&q=80" data-caption="Notre salle à manger élégante">
-                <img src="https://images.unsplash.com/photo-1559847844-5315695dadae?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1398&q=80" alt="Salle à manger">
-                <div class="gallery-overlay">
-                    <i class="fas fa-search-plus"></i>
-                </div>
-            </div>
-            <div class="gallery-item" data-image="https://images.unsplash.com/photo-1571115177098-24ec42ed204d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1374&q=80" data-caption="Préparation minutieuse">
-                <img src="https://images.unsplash.com/photo-1571115177098-24ec42ed204d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1374&q=80" alt="Préparation culinaire">
-                <div class="gallery-overlay">
-                    <i class="fas fa-search-plus"></i>
-                </div>
-            </div>
-            <div class="gallery-item" data-image="https://images.unsplash.com/photo-1514933651103-005eec06c04b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1374&q=80" data-caption="Cave à vin sélectionnée">
-                <img src="https://images.unsplash.com/photo-1514933651103-005eec06c04b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1374&q=80" alt="Cave à vin">
-                <div class="gallery-overlay">
-                    <i class="fas fa-search-plus"></i>
-                </div>
-            </div>
-            <div class="gallery-item" data-image="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1374&q=80" data-caption="Notre chef en création">
-                <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1374&q=80" alt="Chef cuisinier">
-                <div class="gallery-overlay">
-                    <i class="fas fa-search-plus"></i>
-                </div>
-            </div>
-            <div class="gallery-item" data-image="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80" data-caption="Dessert artistique">
-                <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80" alt="Dessert">
-                <div class="gallery-overlay">
-                    <i class="fas fa-search-plus"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
     <!-- Chefs Section -->
     <section class="chefs" id="chefs">
         <div class="container">
@@ -677,13 +676,7 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
             <div class="footer-container">
                 <div class="footer-about">
                     <a href="#" class="footer-logo">Mmh restaurant</a>
-                    <p>Depuis 1985, Mmh restaurant redéfinit l'excellence gastronomique à travers une cuisine créative, des produits d'exception et un service irréprochable.</p>
-                    <div class="footer-social">
-                        <a href="#"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#"><i class="fab fa-twitter"></i></a>
-                        <a href="#"><i class="fab fa-instagram"></i></a>
-                        <a href="#"><i class="fab fa-pinterest"></i></a>
-                    </div>
+                    <p>Un restaurant de famille né dans un jardin en 2021. On cuisine ce qu'on aime, pour ceux qu'on aime, un été après l'autre.</p>
                 </div>
                 <div class="footer-links">
                     <h3>Liens utiles</h3>
@@ -691,7 +684,6 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
                         <li><a href="#home">Accueil</a></li>
                         <li><a href="#about">À propos</a></li>
                         <li><a href="#menu">Menu</a></li>
-                        <li><a href="#gallery">Galerie</a></li>
                         <li><a href="#chefs">Chefs</a></li>
                         <li><a href="#contact">Contact</a></li>
                     </ul>
@@ -705,7 +697,7 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
 </div>
             </div>
             <div class="footer-bottom">
-    <p>&copy; 2027 Mmh restaurant. | Ceci est un site de démonstration et de tests UNIQUEMENT</p>
+    <p>&copy; 2026 Mmh restaurant · 5 ans | Ceci est un site de démonstration et de tests UNIQUEMENT</p>
 </div>
         </div>
     </footer>
@@ -801,6 +793,48 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
         firebase.initializeApp(MMH_CONFIG);
         const db = firebase.firestore();
 
+        // --- CONFETTIS (anniversaire des 5 ans) ---
+        function initConfetti() {
+            const box = document.getElementById('confetti');
+            if (!box) return;
+            if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            const colors = ['#d8b25e', '#f0d79a', '#b8923f', '#f3ece0'];
+            const n = window.innerWidth < 700 ? 16 : 28;
+            let html = '';
+            for (let i = 0; i < n; i++) {
+                const left = Math.random() * 100;
+                const dur = 9 + Math.random() * 9;          // chute lente
+                const delay = -Math.random() * dur;          // déjà en cours au chargement
+                const c = colors[Math.floor(Math.random() * colors.length)];
+                const w = 4 + Math.random() * 4;
+                const round = Math.random() < 0.3 ? '50%' : '1px';
+                html += `<i style="left:${left.toFixed(2)}%;width:${w.toFixed(1)}px;height:${(w * 1.7).toFixed(1)}px;`
+                     + `background:${c};border-radius:${round};animation-duration:${dur.toFixed(1)}s;`
+                     + `animation-delay:${delay.toFixed(1)}s"></i>`;
+            }
+            box.innerHTML = html;
+        }
+
+        // --- TYPOGRAPHIE FRANÇAISE ---
+        // En français on met une espace avant ? ! : ; » — mais si elle est
+        // sécable, le signe part seul à la ligne suivante. On la rend insécable.
+        function frText(s) {
+            return String(s == null ? '' : s)
+                .replace(/ +([?!:;»])/g, ' $1')
+                .replace(/« +/g, '« ');
+        }
+        function fixFrenchSpaces(root) {
+            if (!root) return;
+            const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+            const todo = [];
+            while (walker.nextNode()) {
+                const n = walker.currentNode;
+                if (n.parentNode && /^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(n.parentNode.nodeName)) continue;
+                if (/ [?!:;»]/.test(n.nodeValue) || /« /.test(n.nodeValue)) todo.push(n);
+            }
+            todo.forEach(n => { n.nodeValue = frText(n.nodeValue); });
+        }
+
         // --- MODALS INTÉGRÉS (remplacent alert()/confirm() du navigateur) ---
         function uiAlert(message, opts) {
             opts = opts || {};
@@ -808,8 +842,8 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
             const okText = opts.okText || 'OK';
             return new Promise((resolve) => {
                 const overlay = document.getElementById('appModal');
-                document.getElementById('appModalTitle').textContent = title;
-                document.getElementById('appModalMessage').textContent = message;
+                document.getElementById('appModalTitle').textContent = frText(title);
+                document.getElementById('appModalMessage').textContent = frText(message);
                 const btns = document.getElementById('appModalButtons');
                 btns.innerHTML = '';
                 const ok = document.createElement('button');
@@ -829,8 +863,8 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
             const cancelText = opts.cancelText || 'Annuler';
             return new Promise((resolve) => {
                 const overlay = document.getElementById('appModal');
-                document.getElementById('appModalTitle').textContent = title;
-                document.getElementById('appModalMessage').textContent = message;
+                document.getElementById('appModalTitle').textContent = frText(title);
+                document.getElementById('appModalMessage').textContent = frText(message);
                 const btns = document.getElementById('appModalButtons');
                 btns.innerHTML = '';
                 const cancel = document.createElement('button');
@@ -851,9 +885,9 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
         function uiChoice(title, message, options) {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('appModal');
-                document.getElementById('appModalTitle').textContent = title;
+                document.getElementById('appModalTitle').textContent = frText(title);
                 const msgEl = document.getElementById('appModalMessage');
-                msgEl.textContent = message;
+                msgEl.textContent = frText(message);
                 msgEl.style.whiteSpace = 'pre-line';
                 const btns = document.getElementById('appModalButtons');
                 btns.innerHTML = '';
@@ -911,6 +945,23 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
             };
         }
 
+        // Nom utilisé dans les pop-ups avis et pourboire : le même des deux côtés.
+        // Si la personne le corrige dans l'un, l'autre reprend la correction.
+        function knownName(order) {
+            const fromForm = (document.getElementById('name') || {}).value || '';
+            return ((order && order.customer && order.customer.name) || fromForm.trim() || savedCustomer().name || '').trim();
+        }
+        function rememberName(v) {
+            const n = (v || '').trim();
+            if (!n) return;
+            try { localStorage.setItem('customerName', n); } catch (e) {}
+            // on répercute dans l'autre pop-up et dans le formulaire de commande
+            ['tipName', 'reviewName', 'name'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el && el.value.trim() !== n && document.activeElement !== el) el.value = n;
+            });
+        }
+
         function saveTip(order, amount, context, who) {
             const c = order.customer || {};
             return db.collection('tips').add({
@@ -947,7 +998,9 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
                 const valueInput = document.getElementById('tipCustomValue');
                 const errEl = document.getElementById('tipError');
                 const nameInput = document.getElementById('tipName');
-                nameInput.value = '';
+                // Nom pré-rempli et partagé avec le pop-up d'avis
+                nameInput.value = knownName(order);
+                nameInput.oninput = () => rememberName(nameInput.value);
                 document.getElementById('tipSub').textContent =
                     base > 0 ? `Total de la commande : ${base.toFixed(2)} €.` : 'Merci de soutenir la cuisine !';
 
@@ -1027,7 +1080,9 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
                 const overlay = document.getElementById('reviewModal');
                 const errEl = document.getElementById('reviewError');
                 const nameInput = document.getElementById('reviewName');
-                nameInput.value = '';
+                // Nom pré-rempli et partagé avec le pop-up de pourboire
+                nameInput.value = knownName(order);
+                nameInput.oninput = () => rememberName(nameInput.value);
                 errEl.style.display = 'none';
                 const ratings = { service: 0, quality: 0, overall: 0 };
                 overlay.querySelectorAll('.stars').forEach(box => {
@@ -1511,6 +1566,8 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
                 return `<div class="menu-items" data-cat="${cat.id}" style="display:${cat.id === activeCatId ? 'grid' : 'none'};">${cards}</div>`;
             }).join('');
 
+            fixFrenchSpaces(container);
+
             // Navigation entre les sections
             const showCat = (catId, scroll) => {
                 tabsEl.querySelectorAll('.tab-btn').forEach(b => {
@@ -1523,9 +1580,13 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
                 });
                 updateArrows();
                 if (scroll) {
-                    // sur mobile, on ramène la vue en haut de la section
-                    const top = tabsEl.getBoundingClientRect().top + window.scrollY - 84;
-                    if (window.scrollY > top) window.scrollTo({ top: top, behavior: 'smooth' });
+                    // la zone des plats a sa propre barre de défilement : on la remet en haut
+                    container.scrollTop = 0;
+                    // sur grand écran seulement, on recale la page sur les onglets
+                    if (window.innerWidth > 768) {
+                        const top = tabsEl.getBoundingClientRect().top + window.scrollY - 84;
+                        if (window.scrollY > top) window.scrollTo({ top: top, behavior: 'smooth' });
+                    }
                 }
             };
 
@@ -1585,27 +1646,15 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
             // 5. Afficher et suivre toutes les commandes déjà passées depuis cet appareil
             initMyOrders();
 
-            // 6. Lightbox de la galerie
-            const lightbox = document.getElementById('galleryLightbox');
-            if (lightbox) {
-                document.querySelectorAll('.gallery-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        document.getElementById('lightboxImage').src = item.getAttribute('data-image');
-                        document.getElementById('lightboxCaption').textContent = item.getAttribute('data-caption') || '';
-                        lightbox.classList.add('active');
-                    });
-                });
-                document.getElementById('lightboxClose').addEventListener('click', () => lightbox.classList.remove('active'));
-                lightbox.addEventListener('click', (e) => {
-                    if (e.target === lightbox) lightbox.classList.remove('active');
-                });
-                document.addEventListener('keydown', (e) => {
-                    if (e.key === 'Escape') lightbox.classList.remove('active');
-                });
-            }
-
-            // 7. Témoignages : avis validés depuis Firestore (sinon, les exemples restent)
+            // 6. Témoignages : avis validés depuis Firestore (sinon, les exemples restent)
             initTestimonials();
+
+            // 7. Typographie : espaces insécables avant ? ! : ; (sinon le signe
+            //    se retrouve seul sur la ligne suivante, surtout sur téléphone)
+            fixFrenchSpaces(document.body);
+
+            // 8. Confettis dorés du bandeau des 5 ans
+            initConfetti();
         });
 
         // --- TÉMOIGNAGES (avis validés, temps réel, ordre aléatoire, sans points) ---
@@ -1780,13 +1829,5 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
         //  Le formulaire reste toujours visible : plus besoin de « Commander à nouveau ».)
     </script>
 
-    <!-- Lightbox pour les images de la galerie -->
-<div class="lightbox" id="galleryLightbox">
-    <button class="lightbox-close" id="lightboxClose">&times;</button>
-    <div class="lightbox-content">
-        <img id="lightboxImage" src="" alt="Image agrandie">
-        <div class="lightbox-caption" id="lightboxCaption"></div>
-    </div>
-</div>
 </body>
 </html>
