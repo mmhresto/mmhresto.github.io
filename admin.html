@@ -242,6 +242,9 @@
         .dm-sell input { max-width:110px; font-weight:600; }
         .dm-arrow { color:#c3c9d2; padding-bottom:4px; }
         .dm-actions { margin-left:auto; display:flex; gap:8px; flex-wrap:wrap; }
+        .margin-legend { display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:.78rem; color:#8b93a1; margin-bottom:14px; }
+        .margin-legend > span:first-child { font-weight:600; color:#495057; margin-right:2px; }
+        .ml-dot { width:11px; height:11px; border-radius:50%; display:inline-block; margin-left:8px; }
 
         /* Stocks : possibles − commandés = restants */
         .stock-flow { display:flex; align-items:center; gap:10px; margin-top:10px; background:#f8f9fb; border:1px solid #eceef2; border-radius:8px; padding:8px 10px; }
@@ -875,7 +878,16 @@
                                 <button class="btn btn-light btn-sm" id="addRecipeBtn"><i class="bi bi-plus-lg"></i> Nouvelle recette</button>
                             </div>
                         </div>
-                        <div class="card-body"><div id="recipesList"></div></div>
+                        <div class="card-body">
+                            <div class="margin-legend">
+                                <span>Gain par plat :</span>
+                                <span class="ml-dot" style="background:#c0392b"></span> moins de 2 €
+                                <span class="ml-dot" style="background:#e08600"></span> 2 à 2,50 €
+                                <span class="ml-dot" style="background:rgb(20,83,45)"></span> 2,50 €+
+                                <span class="ml-dot" style="background:rgb(61,200,120)"></span> 5 €+
+                            </div>
+                            <div id="recipesList"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -2820,6 +2832,20 @@
             return e + 1;
         }
 
+        // Code couleur du gain par plat :
+        // rouge sous 2 €, orange de 2 à 2,50 €, puis vert — foncé juste au-dessus
+        // du seuil et de plus en plus clair à mesure que la marge grimpe.
+        function marginColor(m) {
+            if (!isFinite(m) || m < 2) return '#c0392b';
+            if (m < 2.5) return '#e08600';
+            const t = Math.min(1, (m - 2.5) / 2.5);      // 2,50 € → 5,00 € et au-delà
+            const mix = (a, b) => Math.round(a + (b - a) * t);
+            return `rgb(${mix(20, 61)},${mix(83, 200)},${mix(45, 120)})`;
+        }
+        function marginHtml(m, pct) {
+            return `€${m.toFixed(2)} <small>(${pct.toFixed(0)}%)</small>`;
+        }
+
         function dishCost(item) {
             return (item.recipe || []).reduce((s, l) => s + (Number(l.qty) || 0) * unitCost(ingById(l.ingredientId)), 0);
         }
@@ -3089,7 +3115,7 @@
                             <span class="dm-lab">Vendu</span>
                             <input type="number" step="0.01" class="form-control form-control-sm js-price" value="${price}">
                         </div>
-                        <div class="dm-cell"><span class="dm-lab">Gain / plat</span><span class="dm-val js-margin">€${marginEur.toFixed(2)} <small>(${marginPct.toFixed(0)}%)</small></span></div>
+                        <div class="dm-cell"><span class="dm-lab">Gain / plat</span><span class="dm-val js-margin" style="color:${marginColor(marginEur)}">${marginHtml(marginEur, marginPct)}</span></div>
                         <div class="dm-actions">
                             <button class="btn btn-sm btn-outline-secondary js-use-reco" type="button" title="Appliquer le prix conseillé pour 60 % de marge">Conseillé : €${reco.toFixed(2)}</button>
                             <button class="btn btn-sm btn-success js-apply-price" type="button">Appliquer au menu</button>
@@ -3124,7 +3150,12 @@
                 const priceInput = card.querySelector('.js-price');
                 const marginEl = card.querySelector('.js-margin');
                 const cost = dishCost(item);
-                const updateMargin = () => { const p = parseFloat(priceInput.value) || 0; const m = p - cost, pct = p > 0 ? (m / p * 100) : 0; marginEl.innerHTML = `€${m.toFixed(2)} <small>(${pct.toFixed(0)}%)</small>`; };
+                const updateMargin = () => {
+                    const p = parseFloat(priceInput.value) || 0;
+                    const m = p - cost, pct = p > 0 ? (m / p * 100) : 0;
+                    marginEl.innerHTML = marginHtml(m, pct);
+                    marginEl.style.color = marginColor(m);
+                };
                 priceInput.addEventListener('input', updateMargin);
                 card.querySelector('.js-use-reco').onclick = () => { priceInput.value = smartRound(cost / (1 - MARGIN_TARGET)).toFixed(2); updateMargin(); };
                 card.querySelector('.js-apply-price').onclick = () => {
