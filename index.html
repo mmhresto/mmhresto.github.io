@@ -172,6 +172,38 @@ section{position:relative;padding-block:clamp(60px,9vw,110px);scroll-margin-top:
 .tab-btn:hover{color:var(--cream-soft)}
 .tab-btn.active{color:var(--cream);border-color:var(--gold)}
 
+/* ---------- Retrouver sa précommande ---------- */
+.preorders{max-width:760px;margin:0 auto 26px;padding:26px 24px;border-radius:var(--r);
+  background:var(--panel);border:1px solid var(--line);text-align:center}
+.pre-title{font-family:var(--serif);font-size:clamp(1.4rem,3.4vw,1.8rem);font-weight:500;margin-bottom:6px}
+.pre-sub{color:var(--cream-soft);font-weight:300;font-size:.92rem;margin-bottom:18px}
+.pre-names{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.pre-name{display:inline-flex;align-items:center;gap:9px;padding:12px 22px;border-radius:999px;
+  border:1px solid rgba(216,178,94,.5);background:rgba(216,178,94,.08);color:var(--cream);
+  font-family:var(--sans);font-size:.95rem;font-weight:500;cursor:pointer;transition:.25s var(--ease)}
+.pre-name:hover{background:var(--gold);color:#231a10;border-color:transparent;transform:translateY(-2px)}
+.pre-name .pre-count{font-size:.76rem;opacity:.7}
+.pre-name.is-done{cursor:not-allowed;opacity:.4;border-style:dashed;border-color:var(--line);
+  background:transparent;color:var(--cream-mute);text-decoration:line-through}
+.pre-name.is-done:hover{transform:none;background:transparent;color:var(--cream-mute)}
+.pre-name.is-active{background:var(--gold);color:#231a10;border-color:transparent}
+.pre-hint{color:var(--cream-mute);font-size:.82rem;font-weight:300;margin-top:16px}
+
+/* ---------- Ce qu'il reste ---------- */
+.leftovers{max-width:760px;margin:0 auto 26px;padding:22px 24px;border-radius:var(--r);
+  background:rgba(216,178,94,.06);border:1px solid rgba(216,178,94,.28)}
+.lo-title{font-family:var(--serif);font-size:1.3rem;font-weight:500;margin-bottom:4px;text-align:center}
+.lo-title i{color:var(--gold);font-size:.9rem;margin-right:6px}
+.lo-sub{color:var(--cream-soft);font-weight:300;font-size:.88rem;text-align:center;margin-bottom:16px}
+.lo-list{display:flex;flex-wrap:wrap;gap:9px;justify-content:center}
+.lo-item{display:inline-flex;align-items:center;gap:9px;padding:9px 14px;border-radius:999px;
+  border:1px solid var(--line);background:rgba(9,6,5,.35);color:var(--cream-soft);
+  font-size:.86rem;cursor:pointer;transition:.2s}
+.lo-item:hover{border-color:var(--gold);color:var(--cream)}
+.lo-item b{font-weight:600;color:var(--cream)}
+.lo-item .lo-left{font-size:.74rem;color:var(--gold)}
+.lo-item i{color:var(--gold);font-size:.78rem}
+
 /* Boutons noirs à halo doré (avis / pourboire) */
 .extra-actions{display:flex;justify-content:center;gap:16px;margin-top:26px;flex-wrap:wrap}
 .glow-btn{position:relative;display:inline-flex;align-items:center;gap:10px;
@@ -379,9 +411,10 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
                 <nav>
                     <ul>
                         <li><a href="#home">Accueil</a></li>
-                        <li><a href="#about">À propos</a></li>
+                        <li><a href="#about">Notre histoire</a></li>
+                        <li><a href="#chefs">Nos chefs</a></li>
                         <li><a href="#menu">Menu</a></li>
-                        <li><a href="#chefs">Chefs</a></li>
+                        <li><a href="#order">Commander</a></li>
                         <li><a href="#contact">Contact</a></li>
                     </ul>
                 </nav>
@@ -433,31 +466,6 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
         </div>
     </section>
 
-    <!-- Menu Section -->
-    <section class="menu" id="menu">
-        <div class="container">
-            <div class="section-title">
-                <h2>Notre Menu</h2>
-            </div>
-            <div class="menu-tabs" id="menuTabs"></div>
-            
-            <!-- Menu chargé dynamiquement depuis Firestore (voir renderClientMenu dans le script) -->
-            <div id="menuContainer">
-                <div class="text-center py-4" style="opacity:.7;">Chargement du menu…</div>
-            </div>
-
-            <!-- Passer d'une section à l'autre sans remonter en haut -->
-            <div class="menu-nav">
-                <button type="button" class="menu-nav-btn" id="menuPrev">
-                    <i class="fas fa-arrow-left"></i><span></span>
-                </button>
-                <div class="menu-nav-now" id="menuNextLabel"></div>
-                <button type="button" class="menu-nav-btn" id="menuNext">
-                    <span></span><i class="fas fa-arrow-right"></i>
-                </button>
-            </div>
-        </div>
-    </section>
     <!-- Chefs Section -->
     <section class="chefs" id="chefs">
         <div class="container">
@@ -536,12 +544,54 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
         </div>
     </section>
 
+    <!-- Menu Section -->
+    <section class="menu" id="menu">
+        <div class="container">
+            <div class="section-title">
+                <h2>Notre Menu</h2>
+            </div>
+            <div class="menu-tabs" id="menuTabs"></div>
+            
+            <!-- Menu chargé dynamiquement depuis Firestore (voir renderClientMenu dans le script) -->
+            <div id="menuContainer">
+                <div class="text-center py-4" style="opacity:.7;">Chargement du menu…</div>
+            </div>
+
+            <!-- Passer d'une section à l'autre sans remonter en haut -->
+            <div class="menu-nav">
+                <button type="button" class="menu-nav-btn" id="menuPrev">
+                    <i class="fas fa-arrow-left"></i><span></span>
+                </button>
+                <div class="menu-nav-now" id="menuNextLabel"></div>
+                <button type="button" class="menu-nav-btn" id="menuNext">
+                    <span></span><i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
     <!-- Order Section -->
     <section class="order" id="order">
         <div class="container">
             <div class="section-title">
                 <h2>Commander</h2>
             </div>
+
+            <!-- Retrouver sa précommande : un clic remplit le panier -->
+            <div class="preorders" id="preorderBox" style="display:none;">
+                <h3 class="pre-title">Vous avez déjà choisi&nbsp;?</h3>
+                <p class="pre-sub">Cliquez sur votre prénom, on remplit votre commande pour vous.</p>
+                <div class="pre-names" id="preNames"></div>
+                <p class="pre-hint" id="preHint">Vous pourrez encore la modifier juste en dessous, selon ce qu'il reste.</p>
+            </div>
+
+            <!-- Ce qui reste réellement disponible, une fois les précommandes réservées -->
+            <div class="leftovers" id="leftovers" style="display:none;">
+                <h3 class="lo-title"><i class="fas fa-utensils"></i> Il reste encore de quoi se faire plaisir</h3>
+                <p class="lo-sub">Envie d'ajouter quelque chose&nbsp;? Voici ce qui n'est pas encore réservé.</p>
+                <div class="lo-list" id="leftoversList"></div>
+            </div>
+
             <form class="order-form" id="orderForm">
     <div class="form-row">
         <div class="form-group">
@@ -682,9 +732,10 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
                     <h3>Liens utiles</h3>
                     <ul>
                         <li><a href="#home">Accueil</a></li>
-                        <li><a href="#about">À propos</a></li>
+                        <li><a href="#about">Notre histoire</a></li>
+                        <li><a href="#chefs">Nos chefs</a></li>
                         <li><a href="#menu">Menu</a></li>
-                        <li><a href="#chefs">Chefs</a></li>
+                        <li><a href="#order">Commander</a></li>
                         <li><a href="#contact">Contact</a></li>
                     </ul>
                 </div>
@@ -1458,7 +1509,7 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
                     const id = card.getAttribute('data-id');
                     const name = card.getAttribute('data-name');
                     const price = parseFloat(card.getAttribute('data-price')) || 0;
-                    const stock = stockOf(id);
+                    const stock = trulyAvailable(id);
                     const existing = cart.find(i => i.id === id);
                     const inCart = existing ? existing.quantity : 0;
                     // On ne peut jamais mettre au panier plus que le stock réalisable
@@ -1477,6 +1528,141 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
             }
         }
 
+        // ================= PRÉCOMMANDES =================
+        // Les précommandes sont des commandes qui vont être passées : elles
+        // réservent donc du stock tant qu'elles n'ont pas été transformées.
+        let preorders = [];
+        let usedPreorderId = null;   // la précommande qu'on est en train de valider
+
+        function initPreorders() {
+            db.collection('preorders').onSnapshot(snap => {
+                preorders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderPreorders();
+                renderLeftovers();
+                refreshMenuAvailability();
+            }, err => console.error('Précommandes :', err));
+        }
+
+        // Quantités encore réservées par les précommandes non honorées
+        function reservedByPreorders() {
+            const r = {};
+            preorders.forEach(p => {
+                if (p.claimed) return;
+                if (usedPreorderId && p.id === usedPreorderId) return; // la nôtre est déjà dans le panier
+                (p.items || []).forEach(it => {
+                    if (it.id) r[it.id] = (r[it.id] || 0) + (Number(it.qty) || 0);
+                });
+            });
+            return r;
+        }
+
+        // Ce qui reste vraiment : stock du plat moins ce que les autres ont réservé
+        function trulyAvailable(dishId) {
+            const res = reservedByPreorders()[dishId] || 0;
+            return Math.max(0, stockOf(dishId) - res);
+        }
+
+        function renderPreorders() {
+            const box = document.getElementById('preorderBox');
+            const list = document.getElementById('preNames');
+            if (!box || !list) return;
+            if (!preorders.length) { box.style.display = 'none'; return; }
+            box.style.display = '';
+
+            const ms = p => (p.createdAt && p.createdAt.toMillis) ? p.createdAt.toMillis() : 0;
+            list.innerHTML = [...preorders].sort((a, b) => ms(a) - ms(b)).map(p => {
+                const n = (p.items || []).reduce((s, it) => s + (Number(it.qty) || 0), 0);
+                const done = !!p.claimed;
+                return `<button type="button" class="pre-name ${done ? 'is-done' : ''} ${usedPreorderId === p.id ? 'is-active' : ''}"
+                          data-id="${p.id}" ${done ? 'disabled' : ''}>
+                          ${done ? '<i class="fas fa-check"></i>' : '<i class="fas fa-user"></i>'}
+                          ${escapeHtmlClient(p.name || 'Anonyme')}
+                          <span class="pre-count">${n} plat${n > 1 ? 's' : ''}</span>
+                        </button>`;
+            }).join('');
+
+            list.querySelectorAll('.pre-name:not(.is-done)').forEach(b =>
+                b.onclick = () => usePreorder(b.getAttribute('data-id')));
+        }
+
+        // Un clic sur son prénom : le panier et le nom se remplissent, puis
+        // la page descend doucement jusqu'au formulaire pour qu'on le voie.
+        async function usePreorder(id) {
+            const p = preorders.find(x => x.id === id);
+            if (!p || p.claimed) return;
+            usedPreorderId = id;
+
+            cart = [];
+            const short = [];
+            (p.items || []).forEach(it => {
+                // ce qui reste, sans compter sa propre réservation (déjà exclue)
+                const dispo = trulyAvailable(it.id);
+                const q = Math.min(Number(it.qty) || 0, dispo);
+                if (q > 0) cart.push({ id: it.id, name: it.name, price: Number(it.price) || priceOf(it.id), quantity: q });
+                if (q < (Number(it.qty) || 0)) short.push(it.name);
+            });
+            updateCart();
+            localStorage.setItem('cart', JSON.stringify(cart));
+
+            const nameEl = document.getElementById('name');
+            if (nameEl && p.name) { nameEl.value = p.name; rememberName(p.name); }
+
+            renderPreorders();
+            renderLeftovers();
+
+            const form = document.getElementById('orderForm');
+            if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            const hint = document.getElementById('preHint');
+            if (hint) {
+                hint.innerHTML = short.length
+                    ? `Bonjour ${escapeHtmlClient(p.name)} — votre commande est prête. <strong>${escapeHtmlClient(short.join(', '))}</strong> n'était plus disponible en totalité, on a ajusté.`
+                    : `Bonjour ${escapeHtmlClient(p.name)} — votre commande est prête. Vous pouvez encore la modifier ci-dessous.`;
+            }
+            if (short.length) {
+                await uiAlert(`Il ne reste plus assez de « ${short.join(', ')} ». Votre panier a été ajusté à ce qui est disponible.`,
+                              { title: 'Stock ajusté' });
+            }
+        }
+
+        function priceOf(id) {
+            const it = menuItemsData.find(m => m.id === id);
+            return it ? (Number(it.price) || 0) : 0;
+        }
+
+        // Ce qui n'est pas encore réservé : on le propose en complément
+        function renderLeftovers() {
+            const box = document.getElementById('leftovers');
+            const list = document.getElementById('leftoversList');
+            if (!box || !list) return;
+            const items = menuItemsData
+                .filter(it => it.active !== false)
+                .map(it => ({ it, left: trulyAvailable(it.id) }))
+                .filter(x => x.left > 0)
+                .sort((a, b) => b.left - a.left);
+            if (!items.length || !preorders.length) { box.style.display = 'none'; return; }
+            box.style.display = '';
+            list.innerHTML = items.map(({ it, left }) => `
+                <button type="button" class="lo-item" data-id="${it.id}">
+                    <i class="fas fa-plus"></i>
+                    <b>${escapeHtmlClient(it.name)}</b>
+                    <span class="lo-left">${left} restant${left > 1 ? 's' : ''}</span>
+                </button>`).join('');
+            list.querySelectorAll('.lo-item').forEach(b => b.onclick = async () => {
+                const id = b.getAttribute('data-id');
+                const it = menuItemsData.find(m => m.id === id);
+                const inCart = (cart.find(c => c.id === id) || {}).quantity || 0;
+                if (inCart >= trulyAvailable(id)) return;
+                const existing = cart.find(c => c.id === id);
+                if (existing) existing.quantity++;
+                else cart.push({ id: id, name: it.name, price: Number(it.price) || 0, quantity: 1 });
+                updateCart();
+                localStorage.setItem('cart', JSON.stringify(cart));
+                renderLeftovers();
+                refreshMenuAvailability();
+            });
+        }
+
         // Stock réalisable d'un plat (source de vérité : menuItems.stock)
         function stockOf(id) {
             const it = menuItemsData.find(m => m.id === id);
@@ -1489,8 +1675,8 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
         function refreshMenuAvailability() {
             document.querySelectorAll('.menu-item').forEach(card => {
                 const id = card.getAttribute('data-id');
-                const stock = stockOf(id);
                 const inCart = (cart.find(i => i.id === id) || {}).quantity || 0;
+                const stock = trulyAvailable(id);
                 const maxed = stock <= 0 || inCart >= stock;
                 card.classList.toggle('sold-out', maxed);
                 card.setAttribute('data-soldout', stock <= 0 ? 'Out of stock' : 'Tout dans le panier');
@@ -1501,7 +1687,7 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
         function clampCartToStock() {
             let changed = false;
             for (let i = cart.length - 1; i >= 0; i--) {
-                const max = stockOf(cart[i].id);
+                const max = trulyAvailable(cart[i].id);
                 if (max <= 0) { cart.splice(i, 1); changed = true; }
                 else if (cart[i].quantity > max) { cart[i].quantity = max; changed = true; }
             }
@@ -1655,6 +1841,9 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
 
             // 8. Confettis dorés du bandeau des 5 ans
             initConfetti();
+
+            // 9. Précommandes : retrouver son choix en un clic
+            initPreorders();
         });
 
         // --- TÉMOIGNAGES (avis validés, temps réel, ordre aléatoire, sans points) ---
@@ -1768,6 +1957,15 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
                     tx.set(newOrderRef, Object.assign({}, orderData, { stockApplied: true }));
                 });
                 addMyOrder(newOrderRef.id);
+                // La précommande est honorée : son nom se grise pour les autres
+                if (usedPreorderId) {
+                    db.collection('preorders').doc(usedPreorderId).update({
+                        claimed: true,
+                        orderId: newOrderRef.id,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }).catch(e => console.error('Précommande :', e));
+                    usedPreorderId = null;
+                }
                 // Mémoriser nom/email pour pré-remplir les prochaines commandes
                 localStorage.setItem('customerName', orderData.customer.name);
                 localStorage.setItem('customerEmail', orderData.customer.email);
