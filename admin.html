@@ -1162,8 +1162,13 @@
                                 <input type="number" step="0.01" class="form-control" id="editItemPrice" required>
                             </div>
                             <div class="col-6 mb-3">
-                                <label for="editItemStock" class="form-label">Stock</label>
-                                <input type="number" class="form-control" id="editItemStock" value="10">
+                                <label for="editItemStock" class="form-label">Stock disponible</label>
+                                <div class="input-group">
+                                    <button class="btn btn-outline-secondary" type="button" id="stockMinus">−</button>
+                                    <input type="number" class="form-control text-center" id="editItemStock" value="10">
+                                    <button class="btn btn-outline-secondary" type="button" id="stockPlus">+</button>
+                                </div>
+                                <div class="form-text" id="stockHint"></div>
                             </div>
                         </div>
                         <div class="mb-3">
@@ -2050,6 +2055,17 @@
             document.getElementById('editItemCategory').value = isEdit ? item.category : (presetCategory || '');
             document.getElementById('editItemActive').value = (isEdit ? (item.active !== false) : true).toString();
 
+            // Rappel de ce que les ingrédients permettent, pour situer la saisie
+            const hint = document.getElementById('stockHint');
+            if (hint) {
+                const th = isEdit ? dishMax(item) : null;
+                const bonus = isEdit ? (Number(item.stockBonus) || 0) : 0;
+                hint.innerHTML = th === null
+                    ? 'Pas de recette : cette valeur est libre.'
+                    : `Les ingrédients permettent <strong>${th}</strong> plat${th > 1 ? 's' : ''}.`
+                      + (bonus ? ` Ajout manuel actuel : ${bonus > 0 ? '+' : ''}${bonus}.` : '');
+            }
+
             editMenuItemModal.show();
         }
 
@@ -2104,6 +2120,16 @@
             .catch(error => { console.error(error); showToast("Erreur", 'danger'); });
         });
 
+        // Ajuster le stock d'un clic depuis la fiche du plat
+        (function () {
+            const inp = document.getElementById('editItemStock');
+            const bump = d => { inp.value = Math.max(0, (parseInt(inp.value) || 0) + d); };
+            const minus = document.getElementById('stockMinus');
+            const plus = document.getElementById('stockPlus');
+            if (minus) minus.onclick = () => bump(-1);
+            if (plus) plus.onclick = () => bump(1);
+        })();
+
         // Ajouter OU modifier un plat (même formulaire)
         document.getElementById('editMenuItemForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -2122,6 +2148,14 @@
                 active: document.getElementById('editItemActive').value === 'true',
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             };
+
+            // Le stock saisi à la main doit survivre au recalcul depuis les ingrédients :
+            // on mémorise l'écart voulu (« stockBonus »), que le recalcul réappliquera.
+            if (id) {
+                const item = menuItems.find(m => m.id === id);
+                const th = item ? dishMax(item) : null;
+                if (th !== null) data.stockBonus = data.stock - th;
+            }
 
             if (id) {
                 db.collection("menuItems").doc(id).update(data)
@@ -3218,8 +3252,10 @@
             if (!stockOrders.length && !ingredients.length) return; // données pas encore chargées
             const updates = [];
             menuItems.forEach(item => {
-                const max = dishMax(item);
-                if (max === null) return; // pas de recette → on ne touche pas au stock
+                const th = dishMax(item);
+                if (th === null) return; // pas de recette → on ne touche pas au stock
+                // on ajoute l'appoint saisi à la main dans la fiche du plat
+                const max = Math.max(0, th + (Number(item.stockBonus) || 0));
                 if ((item.stock || 0) !== max || (item.active !== (max > 0))) updates.push({ id: item.id, stock: max });
             });
             if (!updates.length) return;
