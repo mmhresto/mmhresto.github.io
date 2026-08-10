@@ -731,7 +731,9 @@
                             </div>
                         </div>
                         <div class="card-body">
-                            <p class="text-muted small mb-3">Calculée depuis les précommandes et les recettes. Coche au fur et à mesure dans le supermarché — les coches sont gardées sur ce téléphone.</p>
+                            <p class="text-muted small mb-3">Calculée depuis les précommandes et les recettes.
+                               <strong>Coche un article dès que tu l'as pris</strong> : on te demande le prix, et il entre aussitôt dans le stock et sur le ticket du jour.
+                               Décoche pour annuler.</p>
                             <div id="shoppingList"></div>
                         </div>
                     </div>
@@ -3389,15 +3391,83 @@
             html += `<div class="shop-foot"><span id="shopLeft">${left} article${left > 1 ? 's' : ''} restant${left > 1 ? 's' : ''}</span> sur ${all.length}</div>`;
             box.innerHTML = html;
 
-            box.querySelectorAll('.shop-check').forEach(cb => cb.onchange = () => {
+            box.querySelectorAll('.shop-check').forEach(cb => cb.onchange = async () => {
+                const id = cb.getAttribute('data-id');
+                const row = all.find(r => r.id === id);
                 const set = tickedSet();
-                if (cb.checked) set.add(cb.getAttribute('data-id')); else set.delete(cb.getAttribute('data-id'));
+
+                if (cb.checked) {
+                    // Cocher = « je l'ai acheté » : le produit entre vraiment en stock.
+                    const ok = await registerBought(row);
+                    if (!ok) { cb.checked = false; return; }
+                    set.add(id);
+                } else {
+                    await undoBought(row);
+                    set.delete(id);
+                }
                 saveTicked(set);
                 cb.closest('.shop-row').classList.toggle('is-done', cb.checked);
                 const n = box.querySelectorAll('.shop-check:not(:checked)').length;
                 const el = document.getElementById('shopLeft');
                 if (el) el.textContent = n + ' article' + (n > 1 ? 's' : '') + ' restant' + (n > 1 ? 's' : '');
             });
+        }
+
+        // ---- Cocher un article = l'enregistrer comme acheté ----
+        // Le produit entre en stock et une ligne apparaît sur le ticket du jour,
+        // pour que la liste de courses ne le redemande plus.
+        const BOUGHT = 'mmh_shopping_bought';
+        function boughtMap() { try { return JSON.parse(localStorage.getItem(BOUGHT)) || {}; } catch (e) { return {}; } }
+        function saveBought(m) { try { localStorage.setItem(BOUGHT, JSON.stringify(m)); } catch (e) {} }
+
+        async function registerBought(row) {
+            if (!row) return true;
+            if (row.isDish) return true;                 // plat sans recette : rien à mettre en stock
+            const ing = ingById(row.id);
+            if (!ing) return true;
+
+            const estim = (unitCost(ing) * row.buy) || 0;
+            const prix = await uiPrompt(
+                `Combien as-tu payé pour ${row.buy} ${ing.unit || ''} de ${ing.name} ?`,
+                estim ? estim.toFixed(2) : '', true);
+            if (prix === null || isNaN(prix)) return false;   // annulé : on ne coche pas
+
+            const today = getLocalDateString();
+            try {
+                await db.collection('ingredients').doc(ing.id).update({
+                    stockQty: (Number(ing.stockQty) || 0) + row.buy,
+                    buyPrice: (Number(ing.buyPrice) || 0) + prix
+                });
+                const ref = await db.collection('purchases').add({
+                    name: ing.name, amount: prix, qty: row.buy, unit: ing.unit || '',
+                    date: today, ingredientId: ing.id,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                const m = boughtMap();
+                m[row.id] = { qty: row.buy, amount: prix, purchaseId: ref.id };
+                saveBought(m);
+                showToast(`${ing.name} ajouté au stock (+${row.buy} ${ing.unit || ''})`);
+                return true;
+            } catch (e) {
+                console.error(e); showToast('Erreur lors de l\'enregistrement', 'danger');
+                return false;
+            }
+        }
+
+        async function undoBought(row) {
+            if (!row || row.isDish) return;
+            const m = boughtMap(); const rec = m[row.id];
+            if (!rec) return;
+            const ing = ingById(row.id);
+            try {
+                if (ing) await db.collection('ingredients').doc(ing.id).update({
+                    stockQty: Math.max(0, (Number(ing.stockQty) || 0) - rec.qty),
+                    buyPrice: Math.max(0, (Number(ing.buyPrice) || 0) - rec.amount)
+                });
+                if (rec.purchaseId) await db.collection('purchases').doc(rec.purchaseId).delete();
+                delete m[row.id]; saveBought(m);
+                showToast('Achat annulé');
+            } catch (e) { console.error(e); showToast('Erreur', 'danger'); }
         }
 
         // Texte brut, une ligne par produit : se colle tel quel dans Notes (iPhone)
@@ -3537,6 +3607,34 @@
                 ov.onclick = e => { if (e.target === ov) done(false); };
                 document.onkeydown = e => { if (e.key === 'Escape') done(false); };
                 ok.focus();
+            });
+        }
+
+        // Petite saisie in-page (remplace prompt() du navigateur)
+        function uiPrompt(message, defaultValue, suffix) {
+            return new Promise(res => {
+                const ov = document.getElementById('uiConfirm');
+                document.getElementById('uicMsg').innerHTML =
+                    escapeHtml(message) +
+                    '<div class="input-group mt-3" style="max-width:220px">' +
+                    (suffix ? '<span class="input-group-text">€</span>' : '') +
+                    '<input type="number" step="0.01" min="0" class="form-control" id="uicInput"></div>';
+                const ok = document.getElementById('uicOk'), cancel = document.getElementById('uicCancel');
+                ok.textContent = 'Valider'; ok.className = 'btn btn-primary';
+                ov.classList.add('show');
+                const input = document.getElementById('uicInput');
+                input.value = (defaultValue == null ? '' : defaultValue);
+                setTimeout(() => { input.focus(); input.select(); }, 30);
+                const done = v => {
+                    ov.classList.remove('show'); document.getElementById('uicMsg').innerHTML = '';
+                    ok.onclick = null; cancel.onclick = null; ov.onclick = null; document.onkeydown = null;
+                    res(v);
+                };
+                ok.onclick = () => done(parseFloat(input.value));
+                input.onkeydown = e => { if (e.key === 'Enter') done(parseFloat(input.value)); };
+                cancel.onclick = () => done(null);
+                ov.onclick = e => { if (e.target === ov) done(null); };
+                document.onkeydown = e => { if (e.key === 'Escape') done(null); };
             });
         }
 

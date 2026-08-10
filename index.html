@@ -1595,8 +1595,10 @@ footer{border-top:1px solid var(--line);padding-block:64px 40px;margin-top:40px}
             cart = [];
             const short = [];
             (p.items || []).forEach(it => {
-                // ce qui reste, sans compter sa propre réservation (déjà exclue)
-                const dispo = trulyAvailable(it.id);
+                // Une précommande est une réservation ferme : on l'honore en entier.
+                // Elle ne se bat donc pas contre les autres précommandes, seulement
+                // contre les commandes réellement passées (déjà déduites du stock).
+                const dispo = stockOf(it.id);
                 const q = Math.min(Number(it.qty) || 0, dispo);
                 if (q > 0) cart.push({ id: it.id, name: it.name, price: Number(it.price) || priceOf(it.id), quantity: q });
                 if (q < (Number(it.qty) || 0)) short.push(it.name);
