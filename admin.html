@@ -880,11 +880,11 @@
                         </div>
                         <div class="card-body">
                             <div class="margin-legend">
-                                <span>Gain par plat :</span>
-                                <span class="ml-dot" style="background:#c0392b"></span> moins de 2 €
-                                <span class="ml-dot" style="background:#e08600"></span> 2 à 2,50 €
-                                <span class="ml-dot" style="background:rgb(20,83,45)"></span> 2,50 €+
-                                <span class="ml-dot" style="background:rgb(61,200,120)"></span> 5 €+
+                                <span>Marge :</span>
+                                <span class="ml-dot" style="background:#c0392b"></span> moins de 50 %
+                                <span class="ml-dot" style="background:#e08600"></span> 50 à 60 %
+                                <span class="ml-dot" style="background:rgb(20,83,45)"></span> 60 % (objectif)
+                                <span class="ml-dot" style="background:rgb(61,200,120)"></span> 80 % et +
                             </div>
                             <div id="recipesList"></div>
                         </div>
@@ -2832,18 +2832,19 @@
             return e + 1;
         }
 
-        // Code couleur du gain par plat :
-        // rouge sous 2 €, orange de 2 à 2,50 €, puis vert — foncé juste au-dessus
-        // du seuil et de plus en plus clair à mesure que la marge grimpe.
-        function marginColor(m) {
-            if (!isFinite(m) || m < 2) return '#c0392b';
-            if (m < 2.5) return '#e08600';
-            const t = Math.min(1, (m - 2.5) / 2.5);      // 2,50 € → 5,00 € et au-delà
+        // Code couleur de la marge, en pourcentage du prix de vente.
+        // L'objectif de la maison est 60 % : rouge en dessous de 50 %,
+        // orange de 50 à 60 %, puis vert — foncé au seuil et de plus en plus
+        // clair à mesure que la marge grimpe (80 % et au-delà = le plus clair).
+        function marginColor(pct) {
+            if (!isFinite(pct) || pct < 50) return '#c0392b';
+            if (pct < 60) return '#e08600';
+            const t = Math.min(1, (pct - 60) / 20);      // 60 % → 80 % et au-delà
             const mix = (a, b) => Math.round(a + (b - a) * t);
             return `rgb(${mix(20, 61)},${mix(83, 200)},${mix(45, 120)})`;
         }
         function marginHtml(m, pct) {
-            return `€${m.toFixed(2)} <small>(${pct.toFixed(0)}%)</small>`;
+            return `${pct.toFixed(0)} % <small>(€${m.toFixed(2)})</small>`;
         }
 
         function dishCost(item) {
@@ -3115,7 +3116,7 @@
                             <span class="dm-lab">Vendu</span>
                             <input type="number" step="0.01" class="form-control form-control-sm js-price" value="${price}">
                         </div>
-                        <div class="dm-cell"><span class="dm-lab">Gain / plat</span><span class="dm-val js-margin" style="color:${marginColor(marginEur)}">${marginHtml(marginEur, marginPct)}</span></div>
+                        <div class="dm-cell"><span class="dm-lab">Marge</span><span class="dm-val js-margin" style="color:${marginColor(marginPct)}">${marginHtml(marginEur, marginPct)}</span></div>
                         <div class="dm-actions">
                             <button class="btn btn-sm btn-outline-secondary js-use-reco" type="button" title="Appliquer le prix conseillé pour 60 % de marge">Conseillé : €${reco.toFixed(2)}</button>
                             <button class="btn btn-sm btn-success js-apply-price" type="button">Appliquer au menu</button>
@@ -3154,7 +3155,7 @@
                     const p = parseFloat(priceInput.value) || 0;
                     const m = p - cost, pct = p > 0 ? (m / p * 100) : 0;
                     marginEl.innerHTML = marginHtml(m, pct);
-                    marginEl.style.color = marginColor(m);
+                    marginEl.style.color = marginColor(pct);
                 };
                 priceInput.addEventListener('input', updateMargin);
                 card.querySelector('.js-use-reco').onclick = () => { priceInput.value = smartRound(cost / (1 - MARGIN_TARGET)).toFixed(2); updateMargin(); };
