@@ -44,6 +44,10 @@ textarea{resize:vertical;min-height:80px}
 .dish:last-child{border-bottom:none}
 .dish-info{flex:1;min-width:0}
 .dish-name{font-family:var(--serif);font-size:1.25rem;line-height:1.2}
+.dish-price{margin-left:10px;font-family:var(--sans);font-size:.82rem;font-weight:500;color:var(--gold);white-space:nowrap}
+.recap li span{float:right;color:var(--cream)}
+.recap-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:12px;padding-top:12px;
+  border-top:1px solid rgba(216,178,94,.3);font-family:var(--serif);font-size:1.25rem;color:var(--gold)}
 .dish-desc{font-size:.8rem;color:var(--cream-mute);font-weight:300;margin-top:2px}
 .dish.picked .dish-name{color:var(--gold)}
 .qty{display:flex;align-items:center;gap:4px;flex:none}
@@ -100,7 +104,7 @@ textarea{resize:vertical;min-height:80px}
 
   <p class="err" id="err"></p>
   <button class="btn" id="send">Envoyer mon choix</button>
-  <p class="hint">Vous pourrez toujours changer d'avis : renvoyez simplement le formulaire.</p>
+  <p class="hint">Vous pourrez toujours changer d'avis&nbsp;: renvoyez simplement le formulaire.</p>
 </div>
 
 <div class="card done" id="done" style="display:none">
@@ -188,7 +192,7 @@ function renderMenu(){
       ${g.items.map(it=>`
         <div class="dish" data-id="${it.id}">
           <div class="dish-info">
-            <div class="dish-name">${esc(it.name)}</div>
+            <div class="dish-name">${esc(it.name)}${Number(it.price)>0?`<span class="dish-price">${Number(it.price).toFixed(2).replace('.',',')}&nbsp;€</span>`:""}</div>
             ${it.description?`<div class="dish-desc">${esc(it.description)}</div>`:""}
           </div>
           <div class="qty">
@@ -227,14 +231,26 @@ function paintAll(){
 }
 
 function chosen(){
-  return dishes.filter(d=>qty[d.id]>0).map(d=>({id:d.id,name:d.name||"",qty:qty[d.id]}));
+  return dishes.filter(d=>qty[d.id]>0)
+               .map(d=>({id:d.id,name:d.name||"",qty:qty[d.id],price:Number(d.price)||0}));
 }
+
+const eur=v=>v.toFixed(2).replace('.',',')+" €";
 
 function paintRecap(){
   const list=chosen();
   const box=$("recap");
   box.classList.toggle("on",list.length>0);
-  $("recapList").innerHTML=list.map(c=>`<li>${c.qty} × ${esc(c.name)}</li>`).join("");
+  const total=list.reduce((s,c)=>s+c.qty*c.price,0);
+  $("recapList").innerHTML=list.map(c=>
+    `<li>${c.qty} × ${esc(c.name)}${c.price>0?`<span>${eur(c.qty*c.price)}</span>`:""}</li>`).join("");
+  const old=box.querySelector(".recap-total"); if(old) old.remove();
+  if(total>0){
+    const d=document.createElement("div");
+    d.className="recap-total";
+    d.innerHTML=`<span>Total</span><strong>${eur(total)}</strong>`;
+    box.appendChild(d);
+  }
 }
 
 // ---------- Envoi ----------
@@ -257,6 +273,7 @@ $("send").onclick=()=>{
     name:name,
     items:list,
     total:list.reduce((s,c)=>s+c.qty,0),
+    amount:list.reduce((s,c)=>s+c.qty*c.price,0),
     note:$("note").value.trim(),
     service:"Dîner du lundi 10 août 2026"
   };
