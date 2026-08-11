@@ -247,6 +247,8 @@
         .ml-dot { width:11px; height:11px; border-radius:50%; display:inline-block; margin-left:8px; }
 
         /* Stocks : possibles − commandés = restants */
+        .stock-tools { display:flex; align-items:center; gap:12px; flex-wrap:wrap; background:#f8f9fb; border:1px solid #eceef2; border-radius:10px; padding:12px 14px; margin-bottom:16px; }
+        .st-hint { font-size:.82rem; color:#8b93a1; }
         .stock-flow { display:flex; align-items:center; gap:10px; margin-top:10px; background:#f8f9fb; border:1px solid #eceef2; border-radius:8px; padding:8px 10px; }
         .sf-cell { display:flex; flex-direction:column; align-items:center; flex:1; }
         .sf-num { font-size:1.15rem; font-weight:700; line-height:1.1; }
@@ -899,8 +901,17 @@
                             <h5 class="mb-0">Gestion des Stocks</h5>
                         </div>
                         <div class="card-body">
-                            <div class="alert alert-info">
-                                <i class="bi bi-info-circle"></i> Les articles en rupture de stock seront automatiquement désactivés dans le menu client.
+                            <div class="stock-tools">
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" id="autoStockSwitch">
+                                    <label class="form-check-label" for="autoStockSwitch">
+                                        Calculer le stock depuis les ingrédients
+                                    </label>
+                                </div>
+                                <span class="st-hint" id="autoStockHint"></span>
+                                <button class="btn btn-sm btn-outline-primary ms-auto" id="resetStock100">
+                                    <i class="bi bi-arrow-repeat"></i> Tout remettre à 100
+                                </button>
                             </div>
                             
                             <div class="row mb-3">
@@ -1946,7 +1957,7 @@
                 const category = categories.find(cat => cat.id === item.category);
                 const categoryName = category ? category.name : 'Non classé';
                 const max = dishMax(item);
-                const realisables = max === null ? (item.stock || 0) : max;
+                const realisables = effectiveStock(item);
                 const rupture = realisables <= 0;
                 const sold = soldCount(item.id);
                 const totalPossible = max === null ? null : realisables + sold;
@@ -2886,6 +2897,19 @@
         function dishCost(item) {
             return (item.recipe || []).reduce((s, l) => s + (Number(l.qty) || 0) * unitCost(ingById(l.ingredientId)), 0);
         }
+        // LA valeur de référence, utilisée partout : ce que les ingrédients permettent,
+        // plus l'appoint saisi à la main dans la fiche du plat. Sans cette fonction
+        // unique, l'onglet Stocks et le menu affichaient deux chiffres différents.
+        function effectiveStock(item) {
+            // recalcul coupé : la valeur enregistrée fait foi, sans discussion
+            if (typeof autoStockOn === 'function' && !autoStockOn()) {
+                return Math.max(0, Number(item.stock) || 0);
+            }
+            const th = dishMax(item);
+            if (th === null) return Math.max(0, Number(item.stock) || 0);
+            return Math.max(0, th + (Number(item.stockBonus) || 0));
+        }
+
         // Nombre de plats encore réalisables : basé sur ce qu'il RESTE des ingrédients
         // (achats − consommation de toutes les commandes déjà passées).
         function dishMax(item) {
@@ -3122,7 +3146,7 @@
             if (!dishes.length) { box.innerHTML = '<p class="text-muted">Aucune recette. Clique « Nouvelle recette » pour créer ton premier plat.</p>'; recomputeStocks(); return; }
             box.innerHTML = dishes.map(item => {
                 const cost = dishCost(item);
-                const max = dishMax(item);
+                const max = (dishMax(item) === null) ? null : effectiveStock(item);
                 const reco = smartRound(cost / (1 - MARGIN_TARGET));
                 const price = Number(item.price) || 0;
                 const marginEur = price - cost;
@@ -3247,15 +3271,55 @@
         // Met le stock de chaque plat = nombre encore réalisable.
         // Recalcul complet (ingrédients achetés − toutes les commandes) : cette valeur
         // fait autorité et corrige d'éventuels écarts accumulés.
+        // Le recalcul automatique est DÉSACTIVÉ par défaut : le stock que tu saisis
+        // fait foi et n'est jamais écrasé. Réactivable depuis l'onglet Stocks.
+        function autoStockOn() {
+            try { return localStorage.getItem('mmh_autostock') === '1'; } catch (e) { return false; }
+        }
+
+        // Interrupteur + remise à 100 (onglet Stocks)
+        (function () {
+            const sw = document.getElementById('autoStockSwitch');
+            const hint = document.getElementById('autoStockHint');
+            const paint = () => {
+                if (!hint) return;
+                hint.textContent = autoStockOn()
+                    ? "Le stock se recalcule tout seul ; tes saisies seront écrasées."
+                    : "Le stock que tu saisis fait foi — rien ne l'écrase.";
+            };
+            if (sw) {
+                sw.checked = autoStockOn();
+                paint();
+                sw.onchange = () => {
+                    try { localStorage.setItem('mmh_autostock', sw.checked ? '1' : '0'); } catch (e) {}
+                    paint();
+                    showToast(sw.checked ? 'Calcul automatique activé' : 'Calcul automatique coupé');
+                    if (sw.checked) recomputeStocks();
+                    renderStocksFromMenu();
+                };
+            }
+            const btn = document.getElementById('resetStock100');
+            if (btn) btn.onclick = async () => {
+                if (!(await uiConfirm('Remettre tous les plats à 100 en stock et les rendre disponibles ?'))) return;
+                const batch = db.batch();
+                menuItems.forEach(it => batch.update(db.collection('menuItems').doc(it.id), {
+                    stock: 100, active: true,
+                    stockBonus: firebase.firestore.FieldValue.delete()
+                }));
+                batch.commit()
+                    .then(() => showToast(menuItems.length + ' plats remis à 100'))
+                    .catch(e => { console.error(e); showToast('Erreur', 'danger'); });
+            };
+        })();
+
         function recomputeStocks() {
+            if (!autoStockOn()) return;
             if (stockRecomputing) return;
             if (!stockOrders.length && !ingredients.length) return; // données pas encore chargées
             const updates = [];
             menuItems.forEach(item => {
-                const th = dishMax(item);
-                if (th === null) return; // pas de recette → on ne touche pas au stock
-                // on ajoute l'appoint saisi à la main dans la fiche du plat
-                const max = Math.max(0, th + (Number(item.stockBonus) || 0));
+                if (dishMax(item) === null) return; // pas de recette → on ne touche pas au stock
+                const max = effectiveStock(item);
                 if ((item.stock || 0) !== max || (item.active !== (max > 0))) updates.push({ id: item.id, stock: max });
             });
             if (!updates.length) return;
